@@ -14,6 +14,8 @@ struct PA_EXPORT vector_field
   vector3 interpolate(const vector4& position) const;
 
   boost::multi_array<vector3, 3> data    {};
+  vector3                        offset  {};
+  vector3                        size    {};
   vector3                        spacing {};
 };
 }

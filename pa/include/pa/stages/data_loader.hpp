@@ -25,11 +25,11 @@ public:
   data_loader& operator=(      data_loader&& temp) = delete ;
 
   void                                       set_file      (const std::string& filepath );
-  std::optional<vector_field>                load_local    (const selection&   selection);
-  std::array<std::optional<vector_field>, 6> load_neighbors(const selection&   selection);
+  std::optional<vector_field>                load_local    ();
+  std::array<std::optional<vector_field>, 6> load_neighbors();
 
 protected:
-  void                                       load          (const selection&   selection, const partitioner::rank_info& rank_info, std::optional<vector_field>& output);
+  void                                       load          (const partitioner::rank_info& rank_info, std::optional<vector_field>& output);
 
   partitioner*                    partitioner_ = nullptr;
   std::unique_ptr<HighFive::File> file_        = nullptr;

@@ -161,17 +161,16 @@ void                         particle_tracer::initialize                (const s
 }
 void                         particle_tracer::trace                     (const std::vector<particle>& particles,       std::vector<integral_curves>& integral_curves,       round_info& round_info)
 {
-  auto  block_size = partitioner_->block_size        ().cast<float>();
-  auto& local      = partitioner_->local_rank_info   ();
-  auto& neighbors  = partitioner_->neighbor_rank_info();
+  auto& local     = partitioner_->local_rank_info   ();
+  auto& neighbors = partitioner_->neighbor_rank_info();
 
   tbb::parallel_for(std::size_t(0), particles.size(), std::size_t(1), [&] (const std::size_t particle_index)
   {
     auto& particle      = particles[particle_index];
     auto& vector_field  = particle.vector_field_index == -1 ? local_vector_field_->value() : neighbor_vector_fields_->at(particle.vector_field_index).value();
+    auto  minimum       = vector_field.offset;
+    auto  maximum       = vector_field.offset + vector_field.size;
     auto  integrator    = integrator_;
-    auto  bounds        = vector_field.spacing.array() * block_size.array();
-    auto  offset        = vector_field.spacing.array() * (particle.vector_field_index == -1 ? local->offset : neighbors[particle.vector_field_index]->offset).cast<float>().array();
 
     for (std::size_t iteration_index = 1; iteration_index < particle.remaining_iterations; ++iteration_index)
     {
@@ -179,7 +178,7 @@ void                         particle_tracer::trace                     (const s
       const auto  relative_vertex_index = absolute_vertex_index % round_info.vertices_per_integral_curve;
       const auto  integral_curve_index  = absolute_vertex_index / round_info.vertices_per_integral_curve + round_info.integral_curve_offset;
 
-            auto& last_vertex           = integral_curves[integral_curve_index].vertices[relative_vertex_index - 1];
+      const auto& last_vertex           = integral_curves[integral_curve_index].vertices[relative_vertex_index - 1];
             auto& vertex                = integral_curves[integral_curve_index].vertices[relative_vertex_index    ];
       
       vertex = termination_vertex;
@@ -191,37 +190,13 @@ void                         particle_tracer::trace                     (const s
         if (particle.vector_field_index == -1)
         {
           auto neighbor_rank = -1;
-
-          if      (neighbor_particle.position[0] < 0.0f      && neighbors[0])
-          {
-            neighbor_rank                  = neighbors[0]->rank;
-            neighbor_particle.position[0] += bounds   [0];
-          }
-          else if (neighbor_particle.position[0] > bounds[0] && neighbors[1])
-          {
-            neighbor_rank                  = neighbors[1]->rank;
-            neighbor_particle.position[0] -= bounds   [0];
-          }
-          else if (neighbor_particle.position[1] < 0.0f      && neighbors[2])
-          {
-            neighbor_rank                  = neighbors[2]->rank;
-            neighbor_particle.position[1] += bounds   [1];
-          }
-          else if (neighbor_particle.position[1] > bounds[1] && neighbors[3])
-          {
-            neighbor_rank                  = neighbors[3]->rank;
-            neighbor_particle.position[1] -= bounds   [1];
-          }
-          else if (neighbor_particle.position[2] < 0.0f      && neighbors[4])
-          {
-            neighbor_rank                  = neighbors[4]->rank;
-            neighbor_particle.position[2] += bounds   [2];
-          }
-          else if (neighbor_particle.position[2] > bounds[2] && neighbors[5])
-          {
-            neighbor_rank                  = neighbors[5]->rank;
-            neighbor_particle.position[2] -= bounds   [2];
-          }
+          
+          if      (neighbor_particle.position[0] < minimum[0] && neighbors[0]) neighbor_rank = neighbors[0]->rank;
+          else if (neighbor_particle.position[0] > maximum[0] && neighbors[1]) neighbor_rank = neighbors[1]->rank;
+          else if (neighbor_particle.position[1] < minimum[1] && neighbors[2]) neighbor_rank = neighbors[2]->rank;
+          else if (neighbor_particle.position[1] > maximum[1] && neighbors[3]) neighbor_rank = neighbors[3]->rank;
+          else if (neighbor_particle.position[2] < minimum[2] && neighbors[4]) neighbor_rank = neighbors[4]->rank;
+          else if (neighbor_particle.position[2] > maximum[2] && neighbors[5]) neighbor_rank = neighbors[5]->rank;
           
           round_info::particle_map::accessor accessor;
           if (round_info.out_of_bounds_particles.find(accessor, neighbor_rank))
@@ -263,19 +238,14 @@ void                         particle_tracer::trace                     (const s
         std::get<adams_bashforth_2_integrator>           (integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
       else if (std::holds_alternative<adams_bashforth_moulton_2_integrator>   (integrator))
         std::get<adams_bashforth_moulton_2_integrator>   (integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
-
-      // TODO Update offsets.
-      //last_vertex += vector4();
-      //if (iteration_index + 1 == particle.remaining_iterations)
-      //  vertex += vector4();
     }
   });
 }
 void                         particle_tracer::load_balance_collect      (                                                                                             const round_info& round_info)
 {
-  auto& neighbors  = partitioner_->neighbor_rank_info();
-  auto  block_size = partitioner_->block_size().cast<float>();
-  auto  bounds     = local_vector_field_->value().spacing.array() * block_size.array();
+  auto& neighbors = partitioner_->neighbor_rank_info();
+  auto  minimum   = local_vector_field_->value().offset;
+  auto  maximum   = local_vector_field_->value().offset + local_vector_field_->value().size;
 
   for (auto& neighbor : round_info.neighbor_out_of_bounds_particles)
     partitioner_->communicator()->send(neighbor.first, 2, neighbor.second);
@@ -290,36 +260,12 @@ void                         particle_tracer::load_balance_collect      (       
       auto& particle      = temporary[index];
       auto  neighbor_rank = -1;
 
-      if      (particle.position[0] < 0.0f      && neighbors[0])
-      {
-        neighbor_rank         = neighbors[0]->rank;
-        particle.position[0] += bounds   [0];
-      }
-      else if (particle.position[0] > bounds[0] && neighbors[1])
-      {
-        neighbor_rank         = neighbors[1]->rank;
-        particle.position[0] -= bounds   [0];
-      }
-      else if (particle.position[1] < 0.0f      && neighbors[2])
-      {
-        neighbor_rank         = neighbors[2]->rank;
-        particle.position[1] += bounds   [1];
-      }
-      else if (particle.position[1] > bounds[1] && neighbors[3])
-      {
-        neighbor_rank         = neighbors[3]->rank;
-        particle.position[1] -= bounds   [1];
-      }
-      else if (particle.position[2] < 0.0f      && neighbors[4])
-      {
-        neighbor_rank         = neighbors[4]->rank;
-        particle.position[2] += bounds   [2];
-      }
-      else if (particle.position[2] > bounds[2] && neighbors[5])
-      {
-        neighbor_rank         = neighbors[5]->rank;
-        particle.position[2] -= bounds   [2];
-      }
+      if      (particle.position[0] < minimum[0] && neighbors[0]) neighbor_rank = neighbors[0]->rank;
+      else if (particle.position[0] > maximum[0] && neighbors[1]) neighbor_rank = neighbors[1]->rank;
+      else if (particle.position[1] < minimum[1] && neighbors[2]) neighbor_rank = neighbors[2]->rank;
+      else if (particle.position[1] > maximum[1] && neighbors[3]) neighbor_rank = neighbors[3]->rank;
+      else if (particle.position[2] < minimum[2] && neighbors[4]) neighbor_rank = neighbors[4]->rank;
+      else if (particle.position[2] > maximum[2] && neighbors[5]) neighbor_rank = neighbors[5]->rank;
 
       round_info::particle_map::accessor accessor;
       if (round_info.out_of_bounds_particles.find(accessor, neighbor_rank))
