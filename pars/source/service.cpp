@@ -42,7 +42,7 @@ void run      (const std::string& address)
     socket.send(response);
   }
 }
-void benchmark(const std::size_t thread_count, const std::string& settings_filepath, const bool save_image)
+void benchmark(const std::size_t thread_count, const std::string& settings_filepath)
 {
   pipeline pipeline(thread_count);
 
@@ -60,7 +60,7 @@ void benchmark(const std::size_t thread_count, const std::string& settings_filep
   result.second.to_csv(output_filepath + ".csv");
   std::cout << "Saved benchmark.\n";
 
-  if (save_image && pipeline.communicator()->rank() == 0)
+  if (pipeline.communicator()->rank() == 0)
   {
     const auto filepath = output_filepath + ".png";
     stbi_write_png(filepath.c_str(), result.first.size(0), result.first.size(1), 4, result.first.data().c_str(), result.first.size(0) * sizeof(std::uint32_t));
