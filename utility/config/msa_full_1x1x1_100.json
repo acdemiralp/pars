@@ -7,6 +7,7 @@
 
   "particle_tracing_integrator"    : 2,
   "particle_tracing_step_size"     : 0.5,
+  "particle_tracing_load_balance"  : true,
 
   "color_generation_mode"          : 0,
   "color_generation_free_parameter": 0.5,
