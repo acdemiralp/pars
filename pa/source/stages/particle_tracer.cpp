@@ -1,0 +1,360 @@
+#include <pa/stages/particle_tracer.hpp>
+
+#include <algorithm>
+#include <limits>
+
+#include <boost/serialization/vector.hpp>
+#include <boost/mpi.hpp>
+#include <tbb/tbb.h>
+
+#include <pa/math/integrators.hpp>
+
+#undef max
+
+namespace pa
+{
+particle_tracer::particle_tracer(partitioner* partitioner) : partitioner_(partitioner)
+{
+
+}
+
+void                         particle_tracer::set_local_vector_field    (std::optional<vector_field>*                local_vector_field    )
+{
+  local_vector_field_     = local_vector_field    ;
+}
+void                         particle_tracer::set_neighbor_vector_fields(std::array<std::optional<vector_field>, 6>* neighbor_vector_fields)
+{
+  neighbor_vector_fields_ = neighbor_vector_fields;
+}
+void                         particle_tracer::set_integrator            (const variant_integrator&                   integrator            )
+{
+  integrator_    = integrator   ;
+}
+void                         particle_tracer::set_step_size             (const scalar                                step_size             )
+{
+  step_size_     = step_size    ;
+}
+
+std::vector<integral_curves> particle_tracer::trace                     (std::vector<particle>                       particles             )
+{
+  std::vector<integral_curves> integral_curves;
+
+  while (!check_completion(particles))
+  {
+                      load_balance_distribute (particles                             );
+    auto round_info = compute_round_info      (particles, integral_curves            );
+                      allocate                (           integral_curves, round_info);
+                      initialize              (particles, integral_curves, round_info);
+                      trace                   (particles, integral_curves, round_info);
+                      load_balance_collect    (                            round_info);
+                      out_of_bounds_distribute(particles,                  round_info);
+  }
+
+  prune (integral_curves);
+  return integral_curves;
+}
+
+void                         particle_tracer::load_balance_distribute   (      std::vector<particle>& particles                                                                                   )
+{
+  // Send/receive particle counts.
+  auto neighbors                = partitioner_->neighbor_rank_info();
+  auto neighbor_particle_counts = std::array<std::size_t, 6> {};
+  neighbor_particle_counts.fill(std::numeric_limits<std::size_t>::max());
+
+  for (auto i = 0; i < neighbors.size(); ++i)
+    if (neighbors[i])
+      partitioner_->communicator()->send(neighbors[i]->rank, 0, particles.size());
+  for (auto i = 0; i < neighbors.size(); ++i)
+    if (neighbors[i])
+      partitioner_->communicator()->recv(neighbors[i]->rank, 0, neighbor_particle_counts[i]);
+
+  // Compute local particle average.
+  auto local_particle_sum   = particles.size();
+  auto local_particle_count = 1;
+  for (auto i = 0; i < neighbor_particle_counts.size(); ++i)
+  {
+    if (neighbor_particle_counts[i] < particles.size())
+    {
+      local_particle_sum   += neighbor_particle_counts[i];
+      local_particle_count ++;
+    }
+  }
+  auto local_particle_average = local_particle_sum / local_particle_count;
+  
+  // Compute particles to be sent.
+  auto sent_particles = std::array<std::vector<particle>, 6> {};
+  for (auto i = 0; i < neighbors.size(); ++i)
+  {
+    if (neighbor_particle_counts[i] < particles.size())
+    {
+      auto particle_count = local_particle_average - neighbor_particle_counts[i];
+      sent_particles[i].insert(sent_particles[i].end(), particles.end() - particle_count, particles.end());
+      particles.erase(particles.end() - particle_count, particles.end());
+
+      tbb::parallel_for(std::size_t(0), sent_particles[i].size(), std::size_t(1), [&] (const std::size_t index)
+      {
+        sent_particles[i][index].vector_field_index = i % 2 == 0 ? i + 1 : i - 1; // This process' +X neighbor treats this process as its -X neighbor and so on. 
+      });
+    }
+  }
+
+  // Send/receive particles.
+  for (auto i = 0; i < neighbors.size(); ++i)
+  {
+    if (!neighbors[i])
+      continue;
+
+    partitioner_->communicator()->send(neighbors[i]->rank, 1, sent_particles[i]);
+  }
+  for (auto i = 0; i < neighbors.size(); ++i)
+  {
+    if (!neighbors[i]) 
+      continue;
+
+    std::vector<particle> temporary;
+    partitioner_->communicator()->recv(neighbors[i]->rank, 1, temporary);
+    particles.insert(particles.end(), temporary.begin(), temporary.end());
+  }
+}
+particle_tracer::round_info  particle_tracer::compute_round_info        (const std::vector<particle>& particles, const std::vector<integral_curves>& integral_curves                              )
+{
+  round_info round_info;
+
+  round_info.maximum_remaining_iterations        = std::max_element(particles.begin(), particles.end(), [ ] (const particle& lhs, const particle& rhs) { return lhs.remaining_iterations < rhs.remaining_iterations; })->remaining_iterations;
+ 
+  const auto maximum_vertices_per_integral_curve = std::numeric_limits<integer>::max() / sizeof(vector4);
+  const auto particles_per_integral_curve        = maximum_vertices_per_integral_curve / round_info.maximum_remaining_iterations;
+
+  round_info.vertices_per_integral_curve         =                    particles_per_integral_curve * round_info.maximum_remaining_iterations;
+  round_info.vertices_per_integral_curve_last    = particles.size() % particles_per_integral_curve * round_info.maximum_remaining_iterations;
+  round_info.integral_curve_offset               = integral_curves.size();
+  round_info.integral_curve_count                = particles.size() == 0 ? 0 : 1 + particles.size() / particles_per_integral_curve;
+  
+  for (auto& neighbor : partitioner_->neighbor_rank_info())
+  {
+    if (neighbor)
+    {
+      round_info.out_of_bounds_particles         .emplace(neighbor->rank, std::vector<particle>());
+      round_info.neighbor_out_of_bounds_particles.emplace(neighbor->rank, std::vector<particle>());
+    }
+  }
+
+  return     round_info;
+}
+void                         particle_tracer::allocate                  (                                              std::vector<integral_curves>& integral_curves, const round_info& round_info)
+{
+  integral_curves.resize(round_info.integral_curve_offset + round_info.integral_curve_count);
+  tbb::parallel_for(round_info.integral_curve_offset, integral_curves.size(), std::size_t(1), [&] (const std::size_t index)
+  {
+    integral_curves[index].vertices.resize(index != integral_curves.size() - 1 ? round_info.vertices_per_integral_curve : round_info.vertices_per_integral_curve_last, invalid_vertex);
+  });
+}
+void                         particle_tracer::initialize                (const std::vector<particle>& particles,       std::vector<integral_curves>& integral_curves, const round_info& round_info)
+{
+  tbb::parallel_for(std::size_t(0), particles.size(), std::size_t(1), [&] (const std::size_t index)
+  {
+    const auto absolute_vertex_index = index * round_info.maximum_remaining_iterations;
+    const auto relative_vertex_index = absolute_vertex_index % round_info.vertices_per_integral_curve;
+    const auto integral_curve_index  = absolute_vertex_index / round_info.vertices_per_integral_curve + round_info.integral_curve_offset;
+    integral_curves[integral_curve_index].vertices[relative_vertex_index] = particles[index].position;
+  });
+}
+void                         particle_tracer::trace                     (const std::vector<particle>& particles,       std::vector<integral_curves>& integral_curves,       round_info& round_info)
+{
+  auto  block_size = partitioner_->block_size        ().cast<float>();
+  auto& local      = partitioner_->local_rank_info   ();
+  auto& neighbors  = partitioner_->neighbor_rank_info();
+
+  tbb::parallel_for(std::size_t(0), particles.size(), std::size_t(1), [&] (const std::size_t particle_index)
+  {
+    auto& particle      = particles[particle_index];
+    auto& vector_field  = particle.vector_field_index == -1 ? local_vector_field_->value() : neighbor_vector_fields_->at(particle.vector_field_index).value();
+    auto  integrator    = integrator_;
+    auto  bounds        = vector_field.spacing.array() * block_size.array();
+    auto  offset        = vector_field.spacing.array() * (particle.vector_field_index == -1 ? local->offset : neighbors[particle.vector_field_index]->offset).cast<float>().array();
+
+    for (std::size_t iteration_index = 1; iteration_index < particle.remaining_iterations; ++iteration_index)
+    {
+      const auto  absolute_vertex_index = particle_index * round_info.maximum_remaining_iterations + iteration_index;
+      const auto  relative_vertex_index = absolute_vertex_index % round_info.vertices_per_integral_curve;
+      const auto  integral_curve_index  = absolute_vertex_index / round_info.vertices_per_integral_curve + round_info.integral_curve_offset;
+
+            auto& last_vertex           = integral_curves[integral_curve_index].vertices[relative_vertex_index - 1];
+            auto& vertex                = integral_curves[integral_curve_index].vertices[relative_vertex_index    ];
+      
+      vertex = termination_vertex;
+
+      if (!vector_field.contains(last_vertex))
+      {
+        pa::particle neighbor_particle {last_vertex, particle.remaining_iterations - iteration_index, -1};
+
+        if (particle.vector_field_index == -1)
+        {
+          auto neighbor_rank = -1;
+
+          if      (neighbor_particle.position[0] < 0.0f      && neighbors[0])
+          {
+            neighbor_rank                  = neighbors[0]->rank;
+            neighbor_particle.position[0] += bounds   [0];
+          }
+          else if (neighbor_particle.position[0] > bounds[0] && neighbors[1])
+          {
+            neighbor_rank                  = neighbors[1]->rank;
+            neighbor_particle.position[0] -= bounds   [0];
+          }
+          else if (neighbor_particle.position[1] < 0.0f      && neighbors[2])
+          {
+            neighbor_rank                  = neighbors[2]->rank;
+            neighbor_particle.position[1] += bounds   [1];
+          }
+          else if (neighbor_particle.position[1] > bounds[1] && neighbors[3])
+          {
+            neighbor_rank                  = neighbors[3]->rank;
+            neighbor_particle.position[1] -= bounds   [1];
+          }
+          else if (neighbor_particle.position[2] < 0.0f      && neighbors[4])
+          {
+            neighbor_rank                  = neighbors[4]->rank;
+            neighbor_particle.position[2] += bounds   [2];
+          }
+          else if (neighbor_particle.position[2] > bounds[2] && neighbors[5])
+          {
+            neighbor_rank                  = neighbors[5]->rank;
+            neighbor_particle.position[2] -= bounds   [2];
+          }
+          
+          round_info::particle_map::accessor accessor;
+          if (round_info.out_of_bounds_particles.find(accessor, neighbor_rank))
+            accessor->second.push_back(neighbor_particle);
+        }
+        else
+        {
+          auto neighbor_rank = neighbors[particle.vector_field_index]->rank;
+
+          round_info::particle_map::accessor accessor;
+          if (round_info.neighbor_out_of_bounds_particles.find(accessor, neighbor_rank))
+            accessor->second.push_back(neighbor_particle);
+        }
+
+        break;
+      }
+
+      const auto vector = vector_field.interpolate(last_vertex);
+      if (vector.isZero())
+        break;
+
+      const auto system = [&] (const vector4& x, vector4& dxdt, const float t) 
+      { 
+        dxdt = vector4(vector[0], vector[1], vector[2], scalar(0));
+      };
+      if      (std::holds_alternative<euler_integrator>                       (integrator))
+        std::get<euler_integrator>                       (integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
+      else if (std::holds_alternative<modified_midpoint_integrator>           (integrator))
+        std::get<modified_midpoint_integrator>           (integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
+      else if (std::holds_alternative<runge_kutta_4_integrator>               (integrator))
+        std::get<runge_kutta_4_integrator>               (integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
+      else if (std::holds_alternative<runge_kutta_cash_karp_54_integrator>    (integrator))
+        std::get<runge_kutta_cash_karp_54_integrator>    (integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
+      else if (std::holds_alternative<runge_kutta_dormand_prince_5_integrator>(integrator))
+        std::get<runge_kutta_dormand_prince_5_integrator>(integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
+      else if (std::holds_alternative<runge_kutta_fehlberg_78_integrator>     (integrator))
+        std::get<runge_kutta_fehlberg_78_integrator>     (integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
+      else if (std::holds_alternative<adams_bashforth_2_integrator>           (integrator))
+        std::get<adams_bashforth_2_integrator>           (integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
+      else if (std::holds_alternative<adams_bashforth_moulton_2_integrator>   (integrator))
+        std::get<adams_bashforth_moulton_2_integrator>   (integrator).do_step(system, last_vertex, iteration_index * step_size_, vertex, step_size_);
+
+      // TODO Update offsets.
+      //last_vertex += vector4();
+      //if (iteration_index + 1 == particle.remaining_iterations)
+      //  vertex += vector4();
+    }
+  });
+}
+void                         particle_tracer::load_balance_collect      (                                                                                             const round_info& round_info)
+{
+  auto& neighbors  = partitioner_->neighbor_rank_info();
+  auto  block_size = partitioner_->block_size().cast<float>();
+  auto  bounds     = local_vector_field_->value().spacing.array() * block_size.array();
+
+  for (auto& neighbor : round_info.neighbor_out_of_bounds_particles)
+    partitioner_->communicator()->send(neighbor.first, 2, neighbor.second);
+
+  for (auto& neighbor : round_info.neighbor_out_of_bounds_particles)
+  {
+    std::vector<particle> temporary;
+    partitioner_->communicator()->recv(neighbor.first, 2, temporary);
+
+    tbb::parallel_for(std::size_t(0), temporary.size(), std::size_t(1), [&] (const std::size_t index)
+    {
+      auto& particle      = temporary[index];
+      auto  neighbor_rank = -1;
+
+      if      (particle.position[0] < 0.0f      && neighbors[0])
+      {
+        neighbor_rank         = neighbors[0]->rank;
+        particle.position[0] += bounds   [0];
+      }
+      else if (particle.position[0] > bounds[0] && neighbors[1])
+      {
+        neighbor_rank         = neighbors[1]->rank;
+        particle.position[0] -= bounds   [0];
+      }
+      else if (particle.position[1] < 0.0f      && neighbors[2])
+      {
+        neighbor_rank         = neighbors[2]->rank;
+        particle.position[1] += bounds   [1];
+      }
+      else if (particle.position[1] > bounds[1] && neighbors[3])
+      {
+        neighbor_rank         = neighbors[3]->rank;
+        particle.position[1] -= bounds   [1];
+      }
+      else if (particle.position[2] < 0.0f      && neighbors[4])
+      {
+        neighbor_rank         = neighbors[4]->rank;
+        particle.position[2] += bounds   [2];
+      }
+      else if (particle.position[2] > bounds[2] && neighbors[5])
+      {
+        neighbor_rank         = neighbors[5]->rank;
+        particle.position[2] -= bounds   [2];
+      }
+
+      round_info::particle_map::accessor accessor;
+      if (round_info.out_of_bounds_particles.find(accessor, neighbor_rank))
+        accessor->second.push_back(particle);
+    });
+  }
+}
+void                         particle_tracer::out_of_bounds_distribute  (      std::vector<particle>& particles,                                                      const round_info& round_info)
+{
+  particles.clear();
+
+  for (auto& neighbor : round_info.out_of_bounds_particles)
+    partitioner_->communicator()->send(neighbor.first, 3, neighbor.second);
+
+  for (auto& neighbor : round_info.out_of_bounds_particles)
+  {
+    std::vector<particle> temporary;
+    partitioner_->communicator()->recv(neighbor.first, 3, temporary);
+    particles.insert(particles.end(), temporary.begin(), temporary.end());
+  }
+}
+bool                         particle_tracer::check_completion          (const std::vector<particle>& particles                                                                                   )
+{
+  std::vector<std::size_t> particle_sizes;
+  boost::mpi::gather   (*partitioner_->communicator(), particles.size(), particle_sizes, 0);
+  auto   complete = std::all_of(particle_sizes.begin(), particle_sizes.end(), std::bind(std::equal_to<std::size_t>(), std::placeholders::_1, 0));
+  boost::mpi::broadcast(*partitioner_->communicator(), complete, 0);
+  return complete;
+}
+void                         particle_tracer::prune                     (                                              std::vector<integral_curves>& integral_curves                              )
+{
+  tbb::parallel_for(std::size_t(0), integral_curves.size(), std::size_t(1), [&] (const std::size_t index)
+  {
+    auto& vertices = integral_curves[index].vertices;
+    vertices.erase(std::remove(vertices.begin(), vertices.end(), invalid_vertex), vertices.end());
+  });
+}
+}

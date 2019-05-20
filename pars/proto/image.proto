@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package prs;
+
+message image 
+{
+  repeated int32 size = 1;
+  bytes          data = 2;
+}
