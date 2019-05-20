@@ -38,7 +38,8 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     });
     recorder.record("1.2::data_loader::load_neighbors"    , [&] ()
     {
-      neighbor_vector_fields = data_loader_.load_neighbors();
+      if (settings.particle_tracing_load_balance())
+        neighbor_vector_fields = data_loader_.load_neighbors();
     });
 
     recorder.record("2.0::seed_generator::generate"       , [&] ()
@@ -84,6 +85,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
 
       recorder.record("3.1." + std::to_string(round_counter) + ".0::particle_tracer::load_balance_distribute"   , [&]()
       {
+        if (settings.particle_tracing_load_balance())
                      particle_tracer_.load_balance_distribute (seeds                             );
       });
       recorder.record("3.1." + std::to_string(round_counter) + ".1::particle_tracer::compute_round_info"        , [&]()
@@ -104,6 +106,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
       });
       recorder.record("3.1." + std::to_string(round_counter) + ".5::particle_tracer::load_balance_collect"      , [&]()
       {
+        if (settings.particle_tracing_load_balance())
                      particle_tracer_.load_balance_collect    (                        round_info);
       });
       recorder.record("3.1." + std::to_string(round_counter) + ".6::particle_tracer::out_of_bounds_redistribute", [&]()
