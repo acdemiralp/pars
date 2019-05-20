@@ -10,7 +10,7 @@ namespace pa
 class PA_EXPORT seed_generator
 {
 public:
-  static std::vector<particle> generate(const vector3& offset, const vector3& size, const ivector3& particles_per_dimension, integer remaining_iterations);
+  static std::vector<particle> generate(const vector3& offset, const vector3& size, const vector3& stride, integer remaining_iterations);
 };
 }
 

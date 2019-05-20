@@ -183,6 +183,9 @@ void                         particle_tracer::trace                     (const s
       
       vertex = termination_vertex;
 
+      if (iteration_index == particle.remaining_iterations - 1)
+        break;
+
       if (!vector_field.contains(last_vertex))
       {
         pa::particle neighbor_particle {last_vertex, particle.remaining_iterations - iteration_index, -1};

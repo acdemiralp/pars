@@ -32,10 +32,10 @@ void run      (const std::string& address)
     settings settings;
     settings.ParseFromArray(request.data(), static_cast<std::int32_t>(request.size()));
 
-    image image = pipeline.execute(settings);
+    auto result = pipeline.execute(settings);
 
     std::string buffer;
-    image.SerializeToString(&buffer);
+    result.first.SerializeToString(&buffer);
 
     zmq::message_t response(buffer.size());
     memcpy(response.data(), buffer.data(), buffer.size());
@@ -51,7 +51,7 @@ void benchmark(const std::size_t thread_count, const std::string& settings_filep
   const auto    settings_string = std::string(std::istreambuf_iterator<char>(settings_file), std::istreambuf_iterator<char>());
   JsonStringToMessage(settings_string, &settings, google::protobuf::util::JsonParseOptions());
 
-  auto result = pipeline.benchmark(settings);
+  auto result = pipeline.execute(settings);
 
   const auto output_filepath = settings_filepath + 
     ".nodes."   + std::to_string(pipeline.communicator()->size()) + 

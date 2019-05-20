@@ -4,21 +4,22 @@ package pars;
 
 message settings
 {
-  string          dataset_filepath              = 1;
-  repeated int32  dataset_size                  = 2;
-
-  int32           particle_tracing_integrator   = 3;
-  float           particle_tracing_step_size    = 4;
-  int32           particle_tracing_iterations   = 5;
-  repeated int32  particle_tracing_seeds_stride = 6;
-  
-  int32           color_mapping_mode            = 7;
-  float           color_mapping_free_parameter  = 8;
-  
-  repeated float  raytracing_camera_position    = 9;
-  repeated float  raytracing_camera_forward     = 10;
-  repeated float  raytracing_camera_up          = 11;
-  repeated int32  raytracing_image_size         = 12;
-  float           raytracing_streamline_radius  = 13;
-  int32           raytracing_iterations         = 14;
+  string          dataset_filepath                = 1;
+  repeated int32  dataset_size                    = 2;
+                                                  
+  repeated int32  seed_generation_stride          = 3;
+  int32           seed_generation_iterations      = 4;
+                                                  
+  int32           particle_tracing_integrator     = 5;
+  float           particle_tracing_step_size      = 6;
+                                                  
+  int32           color_generation_mode           = 7;
+  float           color_generation_free_parameter = 8;
+                                                  
+  repeated float  raytracing_camera_position      = 9;
+  repeated float  raytracing_camera_forward       = 10;
+  repeated float  raytracing_camera_up            = 11;
+  repeated int32  raytracing_image_size           = 12;
+  float           raytracing_streamline_radius    = 13;
+  int32           raytracing_iterations           = 14;
 }
