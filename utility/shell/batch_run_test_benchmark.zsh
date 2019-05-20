@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=prs_benchmark
-#SBATCH --output=prs_benchmark.log
+#SBATCH --job-name=pars_benchmark
+#SBATCH --output=pars_benchmark.log
 #SBATCH --time=00:10:00
 #SBATCH --mem=8000M
 #SBATCH --nodes=16
@@ -17,4 +17,4 @@ export I_MPI_DAPL_UD_TRANSLATION_CACHE=0
 export I_MPI_FABRICS=shm:ofa
 export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=off
 
-srun --mpi=pmi2 ../../build/benchmark/prs_benchmark ../config/test.json 16
+srun --mpi=pmi2 ../../build/pars_benchmark/pars_benchmark ../config/test.json 16

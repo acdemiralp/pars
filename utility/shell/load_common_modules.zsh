@@ -1,6 +1,4 @@
 #!/usr/bin/env zsh
-module swap openmpi intelmpi
-
 module load cmake/3.13.2
 module load gcc/8
 
