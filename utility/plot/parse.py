@@ -23,22 +23,27 @@ def parse_benchmark_gantt        (filepath):
         if rank >= len(benchmark):
             benchmark.extend([[]] * (rank + 1 - len(benchmark)))
         
+        if (re.match("3\.1\..*\.0", name)):
+            iteration = int(name.split(".")[2])
+            if iteration >= len(benchmark[rank]):
+                benchmark[rank].extend([{"load_balancing": 0.0, "tracing": 0.0, "communication": 0.0}] * (iteration + 1 - len(benchmark[rank])))
+            benchmark[rank][iteration]["load_balancing"] += value
+            
         if (re.match("3\.1\..*\.1", name) or
             re.match("3\.1\..*\.2", name) or
             re.match("3\.1\..*\.3", name) or
             re.match("3\.1\..*\.4", name)):
             iteration = int(name.split(".")[2])
             if iteration >= len(benchmark[rank]):
-                benchmark[rank].extend([{"tracing": 0.0, "communication": 0.0}] * (iteration + 1 - len(benchmark[rank])))
-            benchmark[rank][iteration]["tracing"]       += value
+                benchmark[rank].extend([{"load_balancing": 0.0, "tracing": 0.0, "communication": 0.0}] * (iteration + 1 - len(benchmark[rank])))
+            benchmark[rank][iteration]["tracing"] += value
 
-        if (re.match("3\.1\..*\.0", name) or
-            re.match("3\.1\..*\.5", name) or
+        if (re.match("3\.1\..*\.5", name) or
             re.match("3\.1\..*\.6", name) or
             re.match("3\.1\..*\.7", name)):
             iteration = int(name.split(".")[2])
             if iteration >= len(benchmark[rank]):
-                benchmark[rank].extend([{"tracing": 0.0, "communication": 0.0}] * (iteration + 1 - len(benchmark[rank])))
+                benchmark[rank].extend([{"load_balancing": 0.0, "tracing": 0.0, "communication": 0.0}] * (iteration + 1 - len(benchmark[rank])))
             benchmark[rank][iteration]["communication"] += value
             
     return benchmark
