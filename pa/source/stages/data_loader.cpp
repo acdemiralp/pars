@@ -16,7 +16,11 @@ data_loader::data_loader(partitioner* partitioner) : partitioner_(partitioner)
 
 void                                       data_loader::set_file      (const std::string& filepath )
 {
-  file_ = std::make_unique<HighFive::File>(filepath);
+#ifdef H5_HAVE_PARALLEL
+  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadOnly, HighFive::MPIOFileDriver(*partitioner_->communicator(), MPI_INFO_NULL));
+#else
+  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadOnly);
+#endif
 }
 std::optional<vector_field>                data_loader::load_local    ()
 {
