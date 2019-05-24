@@ -7,7 +7,4 @@ module load IntelMPI/2019.3.199
 module load Boost/1.69.0-Python-2.7.16
 module load HDF5/1.10.5-serial
 module load imkl/2019.3.199
-module load OSPRay/1.8.4
-
-module Stages/2019a
 module load tbb/2019.4.199
