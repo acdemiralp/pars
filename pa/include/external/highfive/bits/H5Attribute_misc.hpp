@@ -10,7 +10,6 @@
 #define H5ATTRIBUTE_MISC_HPP
 
 #include <algorithm>
-#include <array>
 #include <functional>
 #include <numeric>
 #include <sstream>
