@@ -85,13 +85,13 @@ void                         particle_tracer::load_balance_distribute   (      s
   auto sent_particles = std::array<std::vector<particle>, 6> {};
   for (auto i = 0; i < neighbors.size(); ++i)
   {
-    if (neighbor_particle_counts[i] < particles.size())
+    if (neighbor_particle_counts[i] < local_particle_average)
     {
-      auto particle_count = static_cast<std::int64_t>(local_particle_average) - static_cast<std::int64_t>(neighbor_particle_counts[i]);
-      if  (particle_count > 0)
+      auto particle_count = local_particle_average - neighbor_particle_counts[i];
+      if  (particle_count <= static_cast<std::int64_t>(particles.size()))
       {
         sent_particles[i].insert(sent_particles[i].end(), particles.end() - particle_count, particles.end());
-        particles.resize(particles.size() - particle_count);
+        particles.erase(particles.end() - particle_count, particles.end());
 
         tbb::parallel_for(std::size_t(0), sent_particles[i].size(), std::size_t(1), [&] (const std::size_t index)
         {
