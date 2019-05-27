@@ -87,14 +87,17 @@ void                         particle_tracer::load_balance_distribute   (      s
   {
     if (neighbor_particle_counts[i] < particles.size())
     {
-      auto particle_count = local_particle_average - neighbor_particle_counts[i];
-      sent_particles[i].insert(sent_particles[i].end(), particles.end() - particle_count, particles.end());
-      particles.erase(particles.end() - particle_count, particles.end());
-
-      tbb::parallel_for(std::size_t(0), sent_particles[i].size(), std::size_t(1), [&] (const std::size_t index)
+      auto particle_count = static_cast<std::int64_t>(local_particle_average) - static_cast<std::int64_t>(neighbor_particle_counts[i]);
+      if  (particle_count > 0)
       {
-        sent_particles[i][index].vector_field_index = i % 2 == 0 ? i + 1 : i - 1; // This process' +X neighbor treats this process as its -X neighbor and so on. 
-      });
+        sent_particles[i].insert(sent_particles[i].end(), particles.end() - particle_count, particles.end());
+        particles.resize(particles.size() - particle_count);
+
+        tbb::parallel_for(std::size_t(0), sent_particles[i].size(), std::size_t(1), [&] (const std::size_t index)
+        {
+          sent_particles[i][index].vector_field_index = i % 2 == 0 ? i + 1 : i - 1; // This process' +X neighbor treats this process as its -X neighbor and so on. 
+        });
+      }
     }
   }
 
@@ -244,7 +247,7 @@ void                         particle_tracer::trace                     (const s
     }
   });
 }
-void                         particle_tracer::load_balance_collect      (                                                                                             const round_info& round_info)
+void                         particle_tracer::load_balance_collect      (                                                                                                   round_info& round_info)
 {
   auto& neighbors = partitioner_->neighbor_rank_info();
   auto  minimum   = local_vector_field_->value().offset;
