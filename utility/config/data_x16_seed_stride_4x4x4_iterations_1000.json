@@ -1,9 +1,8 @@
 {
-  "dataset_filepath"               : "/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c.h5",
-  "dataset_size"                   : [ 1080, 1690, 152 ],
+  "dataset_filepath"               : "/p/project/cjinm11/Private/demiralp1/data/pli/msa/MSA0309_s0536-0695_c_s16.h5",
 
-  "seed_generation_stride"         : [ 16, 16, 16 ],
-  "seed_generation_iterations"     : 100,
+  "seed_generation_stride"         : [ 4, 4, 4 ],
+  "seed_generation_iterations"     : 1000,
 
   "particle_tracing_integrator"    : "runge_kutta_4",
   "particle_tracing_step_size"     : 0.5,
