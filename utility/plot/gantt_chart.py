@@ -3,7 +3,7 @@ import parse
 from bokeh.plotting import figure, output_file, show
 from bokeh.models   import Span
 
-benchmark = parse.parse_benchmark_gantt("../../build/msvc142/pars_benchmark/test.json.nodes.2.threads.6.csv")
+benchmark = parse.parse_benchmark_gantt("../../build/msvc142/pars_benchmark/test.json.nodes.256.threads.24.csv")
 print(benchmark)
 
 figure = figure(title="PRS Gantt Chart", x_axis_label='Time', y_axis_label='Rank', sizing_mode="scale_height")

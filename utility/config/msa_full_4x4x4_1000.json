@@ -5,11 +5,11 @@
   "seed_generation_stride"         : [ 4, 4, 4 ],
   "seed_generation_iterations"     : 1000,
 
-  "particle_tracing_integrator"    : 2,
+  "particle_tracing_integrator"    : "runge_kutta_4",
   "particle_tracing_step_size"     : 0.5,
   "particle_tracing_load_balance"  : true,
 
-  "color_generation_mode"          : 0,
+  "color_generation_mode"          : "hsv_constant_s",
   "color_generation_free_parameter": 0.5,
 
   "raytracing_camera_position"     : [ 500.0, 750.0, -1250.0 ],

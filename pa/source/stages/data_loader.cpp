@@ -14,7 +14,7 @@ data_loader::data_loader(partitioner* partitioner) : partitioner_(partitioner)
 
 }
 
-void                                       data_loader::set_file      (const std::string& filepath )
+void                                       data_loader::set_file       (const std::string& filepath )
 {
 #ifdef H5_HAVE_PARALLEL
   file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadOnly, HighFive::MPIOFileDriver(*partitioner_->communicator(), MPI_INFO_NULL));
@@ -22,7 +22,13 @@ void                                       data_loader::set_file      (const std
   file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadOnly);
 #endif
 }
-std::optional<vector_field>                data_loader::load_local    ()
+
+ivector3                                   data_loader::load_dimensions()
+{
+  auto dimensions = file_->getDataSet("vectors").getDimensions();
+  return ivector3(dimensions[0], dimensions[1], dimensions[2]);
+}
+std::optional<vector_field>                data_loader::load_local     ()
 {
   std::optional<vector_field> vector_field;
 
@@ -31,7 +37,7 @@ std::optional<vector_field>                data_loader::load_local    ()
 
   return vector_field;
 }
-std::array<std::optional<vector_field>, 6> data_loader::load_neighbors()
+std::array<std::optional<vector_field>, 6> data_loader::load_neighbors ()
 {
   std::array<std::optional<vector_field>, 6> vector_fields;
 
@@ -48,7 +54,7 @@ std::array<std::optional<vector_field>, 6> data_loader::load_neighbors()
   return vector_fields;
 }
 
-void                                       data_loader::load          (const partitioner::rank_info& rank_info, std::optional<vector_field>& vector_field)
+void                                       data_loader::load           (const partitioner::rank_info& rank_info, std::optional<vector_field>& vector_field)
 {
   boost::multi_array<scalar, 4> data;
   file_->getDataSet("vectors").select(

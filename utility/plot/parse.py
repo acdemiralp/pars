@@ -48,7 +48,7 @@ def parse_benchmark_gantt        (filepath):
             
     return benchmark
 
-# Format:       {"partitioner": 123.4, "data_loader": 567.8, "particle_tracer": 123.4, "color_mapper": 567.8, "ray_tracer": 123.4}
+# Format:       {"data_loader": 567.8, "particle_tracer": 123.4, "color_mapper": 567.8, "ray_tracer": 123.4}
 def parse_benchmark_scaling      (filepath):
     raw_benchmark = parse_benchmark(filepath)
 
@@ -60,16 +60,13 @@ def parse_benchmark_scaling      (filepath):
 
         if rank >= len(benchmark):
             benchmark.extend([{
-                "partitioner"    : 0.0, 
                 "data_loader"    : 0.0, 
                 "seed_generator" : 0.0, 
                 "particle_tracer": 0.0, 
                 "index_generator": 0.0, 
                 "color_generator": 0.0, 
                 "ray_tracer"     : 0.0}] * (rank + 1 - len(benchmark)))
-        
-        if re.match("0\..*", name):
-            benchmark[rank]["partitioner"    ] += value          
+               
         if re.match("1\..*", name):
             benchmark[rank]["data_loader"    ] += value
         if re.match("2\..*", name):
@@ -84,7 +81,6 @@ def parse_benchmark_scaling      (filepath):
             benchmark[rank]["ray_tracer"     ] += value
 
     for rank in benchmark:
-        benchmark[0]["partitioner"    ] = max(benchmark[0]["partitioner"    ], rank["partitioner"    ])
         benchmark[0]["data_loader"    ] = max(benchmark[0]["data_loader"    ], rank["data_loader"    ])
         benchmark[0]["seed_generator" ] = max(benchmark[0]["seed_generator" ], rank["seed_generator" ])
         benchmark[0]["particle_tracer"] = max(benchmark[0]["particle_tracer"], rank["particle_tracer"])
@@ -94,7 +90,7 @@ def parse_benchmark_scaling      (filepath):
 
     return benchmark[0]
 
-# Format: {"4": {"partitioner": 123.4, "data_loader": 567.8, "particle_tracer": 123.4, "color_mapper": 567.8, "ray_tracer": 123.4}, ...}
+# Format: {"4": {"data_loader": 567.8, "particle_tracer": 123.4, "color_mapper": 567.8, "ray_tracer": 123.4}, ...}
 def parse_benchmark_scaling_multi(filepaths):
     benchmark = {}
 

@@ -23,20 +23,20 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
 
   auto session = bm::run_mpi<double, std::milli>([&] (bm::session_recorder<double, std::milli>& recorder)
   {
-    recorder.record("0.0::partitioner::set_domain_size"   , [&] ()
-    {
-      partitioner_.set_domain_size({settings.dataset_size(0), settings.dataset_size(1), settings.dataset_size(2)});
-    });
-
     recorder.record("1.0::data_loader::set_file"          , [&] ()
     {
       data_loader_.set_file(settings.dataset_filepath());
     });
-    recorder.record("1.1::data_loader::load_local"        , [&] ()
+    recorder.record("1.1::data_loader::load_dimensions"   , [&] ()
+    {
+      auto dimensions = data_loader_.load_dimensions();
+      partitioner_.set_domain_size({dimensions[0], dimensions[1], dimensions[2]});
+    });
+    recorder.record("1.2::data_loader::load_local"        , [&] ()
     {
       local_vector_field     = data_loader_.load_local    ();
     });
-    recorder.record("1.2::data_loader::load_neighbors"    , [&] ()
+    recorder.record("1.3::data_loader::load_neighbors"    , [&] ()
     {
       if (settings.particle_tracing_load_balance())
         neighbor_vector_fields = data_loader_.load_neighbors();
@@ -57,21 +57,21 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
       particle_tracer_.set_local_vector_field    (&local_vector_field    );
       particle_tracer_.set_neighbor_vector_fields(&neighbor_vector_fields);
       particle_tracer_.set_step_size             (settings.particle_tracing_step_size());
-      if      (settings.particle_tracing_integrator() == 0)
+      if      (settings.particle_tracing_integrator() == "euler")
         particle_tracer_.set_integrator(pa::euler_integrator                       ());
-      else if (settings.particle_tracing_integrator() == 1)
+      else if (settings.particle_tracing_integrator() == "modified_midpoint")
         particle_tracer_.set_integrator(pa::modified_midpoint_integrator           ());
-      else if (settings.particle_tracing_integrator() == 2)
+      else if (settings.particle_tracing_integrator() == "runge_kutta_4")
         particle_tracer_.set_integrator(pa::runge_kutta_4_integrator               ());
-      else if (settings.particle_tracing_integrator() == 3)
+      else if (settings.particle_tracing_integrator() == "runge_kutta_cash_karp_54")
         particle_tracer_.set_integrator(pa::runge_kutta_cash_karp_54_integrator    ());
-      else if (settings.particle_tracing_integrator() == 4)
+      else if (settings.particle_tracing_integrator() == "runge_kutta_dormand_prince_5")
         particle_tracer_.set_integrator(pa::runge_kutta_dormand_prince_5_integrator());
-      else if (settings.particle_tracing_integrator() == 5)
+      else if (settings.particle_tracing_integrator() == "runge_kutta_fehlberg_78")
         particle_tracer_.set_integrator(pa::runge_kutta_fehlberg_78_integrator     ());
-      else if (settings.particle_tracing_integrator() == 6)
+      else if (settings.particle_tracing_integrator() == "adams_bashforth_2")
         particle_tracer_.set_integrator(pa::adams_bashforth_2_integrator           ());
-      else if (settings.particle_tracing_integrator() == 7)
+      else if (settings.particle_tracing_integrator() == "adams_bashforth_moulton_2")
         particle_tracer_.set_integrator(pa::adams_bashforth_moulton_2_integrator   ());
     });
 
@@ -137,15 +137,15 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     recorder.record("5.0::color_generator::generate"      , [&] ()
     {
       pa::color_generator::mode mode;
-      if      (settings.color_generation_mode() == 0)
+      if      (settings.color_generation_mode() == "hsl_constant_s")
         mode = pa::color_generator::mode::hsl_constant_s;
-      else if (settings.color_generation_mode() == 1)
+      else if (settings.color_generation_mode() == "hsl_constant_l")
         mode = pa::color_generator::mode::hsl_constant_l;
-      else if (settings.color_generation_mode() == 2)
+      else if (settings.color_generation_mode() == "hsv_constant_s")
         mode = pa::color_generator::mode::hsv_constant_s;
-      else if (settings.color_generation_mode() == 3)
+      else if (settings.color_generation_mode() == "hsv_constant_v")
         mode = pa::color_generator::mode::hsv_constant_v;
-      else if (settings.color_generation_mode() == 4)
+      else if (settings.color_generation_mode() == "rgb")
         mode = pa::color_generator::mode::rgb;
 
       tbb::parallel_for(std::size_t(0), integral_curves.size(), std::size_t(1), [&] (const std::size_t index)

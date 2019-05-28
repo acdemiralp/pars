@@ -11,7 +11,6 @@ benchmark = parse.parse_benchmark_scaling_multi([
 print(benchmark)
 
 keys            = []
-partitioner     = []
 data_loader     = []
 seed_generator  = []
 particle_tracer = []
@@ -21,7 +20,6 @@ ray_tracer      = []
 
 for key in benchmark:
     keys           .append(str(key))
-    partitioner    .append(benchmark[key]["partitioner"    ])
     data_loader    .append(benchmark[key]["data_loader"    ])
     seed_generator .append(benchmark[key]["seed_generator" ])
     particle_tracer.append(benchmark[key]["particle_tracer"])
@@ -31,7 +29,6 @@ for key in benchmark:
 
 figure = figure(title="PRS Strong Scaling", x_axis_label='Processes', y_axis_label='Time', sizing_mode="scale_height", x_range=keys)
 
-figure.line(keys, partitioner    , legend="Partitioner"    , line_width=2, line_color="lightslategray")
 figure.line(keys, data_loader    , legend="Data Loader"    , line_width=2, line_color="sandybrown"    )
 figure.line(keys, seed_generator , legend="Seed Generator" , line_width=2, line_color="olivedrab"     )
 figure.line(keys, particle_tracer, legend="Particle Tracer", line_width=2, line_color="dodgerblue"    )
