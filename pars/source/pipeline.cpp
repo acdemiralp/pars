@@ -57,21 +57,21 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
       particle_tracer_.set_local_vector_field    (&local_vector_field    );
       particle_tracer_.set_neighbor_vector_fields(&neighbor_vector_fields);
       particle_tracer_.set_step_size             (settings.particle_tracing_step_size());
-      if      (settings.particle_tracing_integrator() == "euler")
+      if      (settings.particle_tracing_integrator() == std::string("euler"))
         particle_tracer_.set_integrator(pa::euler_integrator                       ());
-      else if (settings.particle_tracing_integrator() == "modified_midpoint")
+      else if (settings.particle_tracing_integrator() == std::string("modified_midpoint"))
         particle_tracer_.set_integrator(pa::modified_midpoint_integrator           ());
-      else if (settings.particle_tracing_integrator() == "runge_kutta_4")
+      else if (settings.particle_tracing_integrator() == std::string("runge_kutta_4"))
         particle_tracer_.set_integrator(pa::runge_kutta_4_integrator               ());
-      else if (settings.particle_tracing_integrator() == "runge_kutta_cash_karp_54")
+      else if (settings.particle_tracing_integrator() == std::string("runge_kutta_cash_karp_54"))
         particle_tracer_.set_integrator(pa::runge_kutta_cash_karp_54_integrator    ());
-      else if (settings.particle_tracing_integrator() == "runge_kutta_dormand_prince_5")
+      else if (settings.particle_tracing_integrator() == std::string("runge_kutta_dormand_prince_5"))
         particle_tracer_.set_integrator(pa::runge_kutta_dormand_prince_5_integrator());
-      else if (settings.particle_tracing_integrator() == "runge_kutta_fehlberg_78")
+      else if (settings.particle_tracing_integrator() == std::string("runge_kutta_fehlberg_78"))
         particle_tracer_.set_integrator(pa::runge_kutta_fehlberg_78_integrator     ());
-      else if (settings.particle_tracing_integrator() == "adams_bashforth_2")
+      else if (settings.particle_tracing_integrator() == std::string("adams_bashforth_2"))
         particle_tracer_.set_integrator(pa::adams_bashforth_2_integrator           ());
-      else if (settings.particle_tracing_integrator() == "adams_bashforth_moulton_2")
+      else if (settings.particle_tracing_integrator() == std::string("adams_bashforth_moulton_2"))
         particle_tracer_.set_integrator(pa::adams_bashforth_moulton_2_integrator   ());
     });
 
@@ -137,15 +137,15 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     recorder.record("5.0::color_generator::generate"      , [&] ()
     {
       pa::color_generator::mode mode;
-      if      (settings.color_generation_mode() == "hsl_constant_s")
+      if      (settings.color_generation_mode() == std::string("hsl_constant_s"))
         mode = pa::color_generator::mode::hsl_constant_s;
-      else if (settings.color_generation_mode() == "hsl_constant_l")
+      else if (settings.color_generation_mode() == std::string("hsl_constant_l"))
         mode = pa::color_generator::mode::hsl_constant_l;
-      else if (settings.color_generation_mode() == "hsv_constant_s")
+      else if (settings.color_generation_mode() == std::string("hsv_constant_s"))
         mode = pa::color_generator::mode::hsv_constant_s;
-      else if (settings.color_generation_mode() == "hsv_constant_v")
+      else if (settings.color_generation_mode() == std::string("hsv_constant_v"))
         mode = pa::color_generator::mode::hsv_constant_v;
-      else if (settings.color_generation_mode() == "rgb")
+      else if (settings.color_generation_mode() == std::string("rgb"))
         mode = pa::color_generator::mode::rgb;
 
       tbb::parallel_for(std::size_t(0), integral_curves.size(), std::size_t(1), [&] (const std::size_t index)
@@ -153,7 +153,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
         pa::color_generator::generate(&integral_curves[index], mode, settings.color_generation_free_parameter());
       });
     });
-  
+
     recorder.record("6.0::ray_tracer::set_camera"         , [&] ()
     {
       ray_tracer_.set_camera(
