@@ -266,6 +266,8 @@ void                         particle_tracer::load_balance_collect      (       
       auto& particle      = temporary[index];
       auto  neighbor_rank = -1;
 
+      particle.vector_field_index = -1;
+
       if      (particle.position[0] < minimum[0] && neighbors[0]) neighbor_rank = neighbors[0]->rank;
       else if (particle.position[0] > maximum[0] && neighbors[1]) neighbor_rank = neighbors[1]->rank;
       else if (particle.position[1] < minimum[1] && neighbors[2]) neighbor_rank = neighbors[2]->rank;
