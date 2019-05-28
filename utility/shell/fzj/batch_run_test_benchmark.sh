@@ -11,10 +11,4 @@
 
 source ./load_common_modules.sh
 
-export I_MPI_OFA_TRANSLATION_CACHE=0
-export I_MPI_DAPL_TRANSLATION_CACHE=0
-export I_MPI_DAPL_UD_TRANSLATION_CACHE=0
-export I_MPI_FABRICS=shm:ofa
-export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=off
-
 srun --mpi=pmi2 ../../../build/pars_benchmark/pars_benchmark 16 ../../config/test.json
