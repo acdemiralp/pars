@@ -3,7 +3,12 @@ import parse
 from bokeh.plotting import figure, output_file, show
 from bokeh.models   import Span
 
-benchmark = parse.parse_benchmark_gantt("../../build/msvc142/pars_benchmark/test.json.nodes.256.threads.24.csv")
+# No load balancing example.
+benchmark = parse.parse_benchmark_gantt("D:/root/source/cpp/in_progress/pars/benchmarks/benchmark_sc10_n128_p4_st16_i128_lb0.csv")
+
+# Load balancing example.
+benchmark = parse.parse_benchmark_gantt("D:/root/source/cpp/in_progress/pars/benchmarks/benchmark_sc10_n128_p4_st16_i128_lb1.csv")
+
 print(benchmark)
 
 figure = figure(title="PRS Gantt Chart", x_axis_label='Time', y_axis_label='Rank', sizing_mode="scale_height")
@@ -16,8 +21,8 @@ for rank_index in range(len(benchmark)):
     for iteration_index in range(len(benchmark[rank_index])):
         offsets[iteration_index] = max(offsets[iteration_index], 
                 benchmark[rank_index][iteration_index]["load_balancing"] + 
-                benchmark[rank_index][iteration_index]["tracing"] + 
-                benchmark[rank_index][iteration_index]["communication"]);        
+                benchmark[rank_index][iteration_index]["tracing"       ] + 
+                benchmark[rank_index][iteration_index]["communication" ]);        
 
 for rank_index in range(len(benchmark)):
     offset = 0

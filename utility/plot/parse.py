@@ -2,7 +2,7 @@ import csv
 import os
 import re
 
-def parse_benchmark              (filepath):
+def parse_benchmark                  (filepath):
     benchmark = []
     with open(filepath, mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
@@ -10,8 +10,8 @@ def parse_benchmark              (filepath):
             benchmark.append(row)
     return benchmark
 
-# Format: [[{"tracing": 123.4, "communication": 567.8}, ...]]
-def parse_benchmark_gantt        (filepath):
+# Format: [[{"load_balancing": 456.7, "tracing": 123.4, "communication": 567.8}, ...]]
+def parse_benchmark_gantt            (filepath):
     raw_benchmark = parse_benchmark(filepath)
 
     benchmark = []
@@ -49,7 +49,7 @@ def parse_benchmark_gantt        (filepath):
     return benchmark
 
 # Format:       {"data_loader": 567.8, "particle_tracer": 123.4, "color_mapper": 567.8, "ray_tracer": 123.4}
-def parse_benchmark_scaling      (filepath):
+def parse_benchmark_scaling          (filepath):
     raw_benchmark = parse_benchmark(filepath)
 
     benchmark = []
@@ -91,11 +91,21 @@ def parse_benchmark_scaling      (filepath):
     return benchmark[0]
 
 # Format: {"4": {"data_loader": 567.8, "particle_tracer": 123.4, "color_mapper": 567.8, "ray_tracer": 123.4}, ...}
-def parse_benchmark_scaling_multi(filepaths):
+def parse_benchmark_node_scaling     (filepaths):
     benchmark = {}
 
     for filepath in filepaths:
-        process = int(os.path.basename(filepath).split(".")[3])
+        process = int(os.path.basename(filepath).split("_")[2][1:])
+        benchmark[process] = parse_benchmark_scaling(filepath)
+
+    return benchmark
+
+# Format: {"4": {"data_loader": 567.8, "particle_tracer": 123.4, "color_mapper": 567.8, "ray_tracer": 123.4}, ...}
+def parse_benchmark_processor_scaling(filepaths):
+    benchmark = {}
+
+    for filepath in filepaths:
+        process = int(os.path.basename(filepath).split("_")[3][1:])
         benchmark[process] = parse_benchmark_scaling(filepath)
 
     return benchmark
