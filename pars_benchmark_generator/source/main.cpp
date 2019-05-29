@@ -141,12 +141,12 @@ int main(int argc, char** argv)
     for (auto& seed_iteration         : configuration.seed_iterations        ) {
     for (auto& load_balance           : configuration.load_balancing         ) {
       auto name = std::string("benchmark") +
-        ".data_scale_"   + std::to_string(configuration.dataset_scale) +
-        ".nodes_"        + std::to_string(node) +
-        ".processors_"   + std::to_string(processor) +
-        ".stride_"       + std::to_string(seed_generation_stride) +
-        ".iterations_"   + std::to_string(seed_iteration) +
-        ".load_balance_" + (load_balance ? "true" : "false");
+        "_sc" + std::to_string(configuration.dataset_scale) +
+        "_n"  + std::to_string(node) +
+        "_p"  + std::to_string(processor) +
+        "_st" + std::to_string(seed_generation_stride) +
+        "_i"  + std::to_string(seed_iteration) +
+        "_lb" + (load_balance ? "1" : "0");
 
       // Create the settings.
       auto settings = settings_template;
@@ -166,7 +166,10 @@ int main(int argc, char** argv)
 
       // Create the script.
       auto script = slurm_script_template;
-      // TODO
+      script.replace(script.find("$1"), 2, name);
+      script.replace(script.find("$2"), 2, std::to_string(node));
+      script.replace(script.find("$3"), 2, std::to_string(processor));
+      script.replace(script.find("$4"), 2, "./" + name + ".json");
 
       std::ofstream script_stream(name + ".sh");
       script_stream << script;
@@ -182,7 +185,7 @@ int main(int argc, char** argv)
     for (auto& script : scripts)
       master_script += "sbatch ./" + script + "\n";
 
-    std::ofstream stream("benchmark.master.sh");
+    std::ofstream stream("benchmark_master.sh");
     stream << master_script;
     stream.close();
   }
