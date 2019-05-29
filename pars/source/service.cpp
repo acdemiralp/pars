@@ -53,16 +53,12 @@ void benchmark(const std::size_t thread_count, const std::string& settings_filep
 
   auto result = pipeline.execute(settings);
 
-  const auto output_filepath = settings_filepath + 
-    ".nodes."   + std::to_string(pipeline.communicator()->size()) + 
-    ".threads." + std::to_string(thread_count);
   result.second.gather();
-  result.second.to_csv(output_filepath + ".csv");
-  std::cout << "Saved benchmark.\n";
+  result.second.to_csv(settings_filepath + ".csv");
 
   if (pipeline.communicator()->rank() == 0)
   {
-    const auto filepath = output_filepath + ".png";
+    const auto filepath = settings_filepath + ".png";
     stbi_write_png(filepath.c_str(), result.first.size(0), result.first.size(1), 4, result.first.data().c_str(), result.first.size(0) * sizeof(std::uint32_t));
     std::cout << "Saved image.\n";
   }

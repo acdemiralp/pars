@@ -4,10 +4,9 @@ from bokeh.plotting import figure, output_file, show
 from bokeh.models   import Span
 
 benchmark = parse.parse_benchmark_scaling_multi([
-    "../../build/msvc142/pars_benchmark/test.json.nodes.1.threads.6.csv",
-    "../../build/msvc142/pars_benchmark/test.json.nodes.2.threads.6.csv",
-    "../../build/msvc142/pars_benchmark/test.json.nodes.3.threads.6.csv",
-    "../../build/msvc142/pars_benchmark/test.json.nodes.4.threads.6.csv"])
+    "../../build/msvc142/pars_benchmark/test.json.nodes.32.threads.24.csv",
+    "../../build/msvc142/pars_benchmark/test.json.nodes.48.threads.24.csv",
+    "../../build/msvc142/pars_benchmark/test.json.nodes.62.threads.24.csv"])
 print(benchmark)
 
 keys            = []

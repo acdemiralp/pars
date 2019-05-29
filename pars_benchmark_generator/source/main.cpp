@@ -7,23 +7,23 @@
 std::string settings_template = R"({
   "dataset_filepath"               : "$1",
 
-  "seed_generation_stride"         : [ $2, $3, $4 ],
-  "seed_generation_iterations"     : $5,
+  "seed_generation_stride"         : [ $2, $2, $2 ],
+  "seed_generation_iterations"     : $3,
   
   "particle_tracing_integrator"    : "runge_kutta_4",
   "particle_tracing_step_size"     : 0.5,
-  "particle_tracing_load_balance"  : $6,
+  "particle_tracing_load_balance"  : $4,
   
   "color_generation_mode"          : "hsv_constant_s",
   "color_generation_free_parameter": 0.75,
   
-  "raytracing_camera_position"     : [ $7, $8, $9 ],
+  "raytracing_camera_position"     : [ $5, $6, $7 ],
   "raytracing_camera_forward"      : [ 0.0, 0.0, 1.0 ],
   "raytracing_camera_up"           : [ 0.0, 1.0, 0.0 ],
   "raytracing_image_size"          : [ 1080, 1920 ],
   "raytracing_streamline_radius"   : 0.1,
   "raytracing_iterations"          : 1
-})"; // $1 dataset filepath, $2/$3/$4 seed stride x/y/z, $5 seed iterations, $6 load balancing, $7/$8/$9 camera x/y/z.
+})"; // $1 dataset filepath, $2 seed stride x/y/z, $3 seed iterations, $4 load balancing, $5/$6/$7 camera x/y/z.
 
 std::string slurm_script_template = R"(#!/bin/bash
 #SBATCH --job-name=$1
@@ -44,8 +44,8 @@ module load HDF5/1.10.5
 module load imkl/2019.3.199
 module load tbb/2019.4.199
 
-srun --mpi=pmi2 /p/home/jusers/demiralp1/jureca/source/pars/build/pars_benchmark/pars_benchmark $3 $4
-)"; // $1 name, $2 nodes, $3 processors, $4 settings filepath.
+srun --mpi=pmi2 /p/home/jusers/demiralp1/jureca/source/pars/build/pars_benchmark/pars_benchmark $3 ./$1.json
+)"; // $1 name, $2 nodes, $3 processors.
 
 struct configuration
 {
@@ -151,15 +151,13 @@ int main(int argc, char** argv)
 
       // Create the settings.
       auto settings = settings_template;
-      settings.replace(settings.find("$1"), 2, configuration.dataset_filepath);
-      settings.replace(settings.find("$2"), 2, std::to_string(seed_generation_stride));
-      settings.replace(settings.find("$3"), 2, std::to_string(seed_generation_stride));
-      settings.replace(settings.find("$4"), 2, std::to_string(seed_generation_stride));
-      settings.replace(settings.find("$5"), 2, std::to_string(seed_iteration));
-      settings.replace(settings.find("$6"), 2, load_balance ? "true" : "false");
-      settings.replace(settings.find("$7"), 2, std::to_string(configuration.camera_position[0]));
-      settings.replace(settings.find("$8"), 2, std::to_string(configuration.camera_position[1]));
-      settings.replace(settings.find("$9"), 2, std::to_string(configuration.camera_position[2]));
+      while (settings.find("$1") != std::string::npos) settings.replace(settings.find("$1"), 2, configuration.dataset_filepath);
+      while (settings.find("$2") != std::string::npos) settings.replace(settings.find("$2"), 2, std::to_string(seed_generation_stride));
+      while (settings.find("$3") != std::string::npos) settings.replace(settings.find("$3"), 2, std::to_string(seed_iteration));
+      while (settings.find("$4") != std::string::npos) settings.replace(settings.find("$4"), 2, load_balance ? "true" : "false");
+      while (settings.find("$5") != std::string::npos) settings.replace(settings.find("$5"), 2, std::to_string(configuration.camera_position[0]));
+      while (settings.find("$6") != std::string::npos) settings.replace(settings.find("$6"), 2, std::to_string(configuration.camera_position[1]));
+      while (settings.find("$7") != std::string::npos) settings.replace(settings.find("$7"), 2, std::to_string(configuration.camera_position[2]));
 
       std::ofstream settings_stream(name + ".json");
       settings_stream << settings;
@@ -167,10 +165,9 @@ int main(int argc, char** argv)
 
       // Create the script.
       auto script = slurm_script_template;
-      script.replace(script.find("$1"), 2, name);
-      script.replace(script.find("$2"), 2, std::to_string(node));
-      script.replace(script.find("$3"), 2, std::to_string(processor));
-      script.replace(script.find("$4"), 2, "./" + name + ".json");
+      while (script.find("$1") != std::string::npos) script.replace(script.find("$1"), 2, name);
+      while (script.find("$2") != std::string::npos) script.replace(script.find("$2"), 2, std::to_string(node));
+      while (script.find("$3") != std::string::npos) script.replace(script.find("$3"), 2, std::to_string(processor));
 
       std::ofstream script_stream(name + ".sh");
       script_stream << script;
