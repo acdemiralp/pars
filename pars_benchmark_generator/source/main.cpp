@@ -34,6 +34,7 @@ std::string slurm_script_template = R"(#!/bin/bash
 #SBATCH --cpus-per-task=$3
 #SBATCH --ntasks-per-core=1
 #SBATCH --ntasks-per-node=1
+#SBATCH --account=jinm11
 
 module load CMake/3.14.0
 module load Intel/2019.3.199-GCC-8.3.0
