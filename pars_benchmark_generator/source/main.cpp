@@ -44,6 +44,8 @@ module load HDF5/1.10.5
 module load imkl/2019.3.199
 module load tbb/2019.4.199
 
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/p/home/jusers/demiralp1/jureca/packages/ospray-1.7.3/build/
+
 srun --mpi=pmi2 /p/home/jusers/demiralp1/jureca/source/pars/build/pars_benchmark/pars_benchmark $3 ./$1.json
 )"; // $1 name, $2 nodes, $3 processors.
 
