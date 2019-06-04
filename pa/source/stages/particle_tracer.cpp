@@ -69,35 +69,42 @@ void                         particle_tracer::load_balance_distribute   (      s
       partitioner_->communicator()->recv(neighbors[i]->rank, 0, neighbor_particle_counts[i]);
 
   // Compute local particle average.
-  auto local_particle_sum   = particles.size();
-  auto local_particle_count = 1;
-  for (auto i = 0; i < neighbor_particle_counts.size(); ++i)
+  auto partial_sum   = particles.size();
+  auto partial_count = 1;
+  for (auto neighbor_particle_count : neighbor_particle_counts)
   {
-    if (neighbor_particle_counts[i] < particles.size())
-    {
-      local_particle_sum   += neighbor_particle_counts[i];
-      local_particle_count ++;
-    }
+    if (neighbor_particle_count > particles.size()) continue;
+    partial_sum   += neighbor_particle_count;
+    partial_count ++;
   }
-  auto local_particle_average = local_particle_sum / local_particle_count;
+  auto partial_average = partial_sum / partial_count;
   
+  auto final_sum   = particles.size();
+  auto final_count = 1;
+  for (auto neighbor_particle_count : neighbor_particle_counts)
+  {
+    if (neighbor_particle_count > partial_average) continue;
+    final_sum   += neighbor_particle_count;
+    final_count ++;
+  }
+  auto final_average = final_sum / final_count;
+
   // Compute particles to be sent.
-  auto sent_particles = std::array<std::vector<particle>, 6> {};
+  auto outgoing_particles = std::array<std::vector<particle>, 6> {};
   for (auto i = 0; i < neighbors.size(); ++i)
   {
-    if (neighbor_particle_counts[i] < local_particle_average)
-    {
-      auto particle_count = local_particle_average - neighbor_particle_counts[i];
-      if  (particle_count <= static_cast<std::int64_t>(particles.size()))
-      {
-        sent_particles[i].insert(sent_particles[i].end(), particles.end() - particle_count, particles.end());
-        particles.erase(particles.end() - particle_count, particles.end());
+    if (neighbor_particle_counts[i] > final_average) continue;
 
-        tbb::parallel_for(std::size_t(0), sent_particles[i].size(), std::size_t(1), [&] (const std::size_t index)
-        {
-          sent_particles[i][index].vector_field_index = i % 2 == 0 ? i + 1 : i - 1; // This process' +X neighbor treats this process as its -X neighbor and so on. 
-        });
-      }
+    auto particle_count = final_average - neighbor_particle_counts[i];
+    if  (particle_count <= static_cast<std::int64_t>(particles.size()))
+    {
+      outgoing_particles[i].insert(outgoing_particles[i].end(), particles.end() - particle_count, particles.end());
+      particles.erase(particles.end() - particle_count, particles.end());
+
+      tbb::parallel_for(std::size_t(0), outgoing_particles[i].size(), std::size_t(1), [&] (const std::size_t index)
+      {
+        outgoing_particles[i][index].vector_field_index = i % 2 == 0 ? i + 1 : i - 1; // This process' +X neighbor treats this process as its -X neighbor and so on. 
+      });
     }
   }
 
@@ -107,7 +114,7 @@ void                         particle_tracer::load_balance_distribute   (      s
     if (!neighbors[i])
       continue;
 
-    partitioner_->communicator()->send(neighbors[i]->rank, 1, sent_particles[i]);
+    partitioner_->communicator()->send(neighbors[i]->rank, 1, outgoing_particles[i]);
   }
   for (auto i = 0; i < neighbors.size(); ++i)
   {
