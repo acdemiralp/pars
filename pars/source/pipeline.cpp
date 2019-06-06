@@ -23,25 +23,30 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
 
   auto session = bm::run_mpi<double, std::milli>([&] (bm::session_recorder<double, std::milli>& recorder)
   {
+    if (communicator_.rank() == 0) std::cout << "1.0::data_loader::set_file\n";
     recorder.record("1.0::data_loader::set_file"          , [&] ()
     {
       data_loader_.set_file(settings.dataset_filepath());
     });
+    if (communicator_.rank() == 0) std::cout << "1.1::data_loader::load_dimensions\n";
     recorder.record("1.1::data_loader::load_dimensions"   , [&] ()
     {
       auto dimensions = data_loader_.load_dimensions();
       partitioner_.set_domain_size({dimensions[0], dimensions[1], dimensions[2]});
     });
+    if (communicator_.rank() == 0) std::cout << "1.2::data_loader::load_local\n";
     recorder.record("1.2::data_loader::load_local"        , [&] ()
     {
       local_vector_field     = data_loader_.load_local    ();
     });
+    if (communicator_.rank() == 0) std::cout << "1.3::data_loader::load_neighbors\n";
     recorder.record("1.3::data_loader::load_neighbors"    , [&] ()
     {
       if (settings.particle_tracing_load_balance())
         neighbor_vector_fields = data_loader_.load_neighbors();
     });
 
+    if (communicator_.rank() == 0) std::cout << "2.0::seed_generator::generate\n";
     recorder.record("2.0::seed_generator::generate"       , [&] ()
     {
       pa::vector3 stride(settings.seed_generation_stride(0), settings.seed_generation_stride(1), settings.seed_generation_stride(2));
@@ -52,6 +57,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
         settings.seed_generation_iterations());
     });
 
+    if (communicator_.rank() == 0) std::cout << "3.0::particle_tracer::initialize\n";
     recorder.record("3.0::particle_tracer::initialize"    , [&] ()
     {
       particle_tracer_.set_local_vector_field    (&local_vector_field    );
@@ -76,6 +82,8 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     });
 
     communicator_.barrier();
+
+    if (communicator_.rank() == 0) std::cout << "3.1::particle_tracer::trace\n";
 
     pa::integer round_counter = 0;
     bool        complete      = false;
@@ -121,11 +129,13 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
       round_counter++;
     }
 
+    if (communicator_.rank() == 0) std::cout << "3.2::particle_tracer::prune\n";
     recorder.record("3.2::particle_tracer::prune"         , [&] ()
     {
       particle_tracer_.prune (integral_curves);
     });
 
+    if (communicator_.rank() == 0) std::cout << "4.0::index_generator::generate\n";
     recorder.record("4.0::index_generator::generate"      , [&] ()
     {
       tbb::parallel_for(std::size_t(0), integral_curves.size(), std::size_t(1), [&] (const std::size_t index)
@@ -134,6 +144,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
       });
     });
 
+    if (communicator_.rank() == 0) std::cout << "5.0::color_generator::generate\n";
     recorder.record("5.0::color_generator::generate"      , [&] ()
     {
       pa::color_generator::mode mode;
@@ -154,6 +165,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
       });
     });
 
+    if (communicator_.rank() == 0) std::cout << "6.0::ray_tracer::set_camera\n";
     recorder.record("6.0::ray_tracer::set_camera"         , [&] ()
     {
       ray_tracer_.set_camera(
@@ -161,14 +173,17 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
         {settings.raytracing_camera_forward (0), settings.raytracing_camera_forward (1), settings.raytracing_camera_forward (2)},
         {settings.raytracing_camera_up      (0), settings.raytracing_camera_up      (1), settings.raytracing_camera_up      (2)});
     });
+    if (communicator_.rank() == 0) std::cout << "6.1::ray_tracer::set_image_size\n";
     recorder.record("6.1::ray_tracer::set_image_size"     , [&] ()
     {
       ray_tracer_.set_image_size({ settings.raytracing_image_size(0), settings.raytracing_image_size(1) });
     });
+    if (communicator_.rank() == 0) std::cout << "6.2::ray_tracer::set_integral_curves\n";
     recorder.record("6.2::ray_tracer::set_integral_curves", [&] ()
     {
       ray_tracer_.set_integral_curves(&integral_curves, settings.raytracing_streamline_radius() ? settings.raytracing_streamline_radius() : 1.0f);
     });
+    if (communicator_.rank() == 0) std::cout << "6.2::ray_tracer::trace\n";
     recorder.record("6.2::ray_tracer::trace"              , [&] ()
     {
       ray_tracer_.trace(settings.raytracing_iterations());
