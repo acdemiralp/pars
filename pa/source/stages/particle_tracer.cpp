@@ -9,6 +9,7 @@
 
 #include <pa/math/integrators.hpp>
 
+#undef min
 #undef max
 
 namespace pa
@@ -68,44 +69,112 @@ void                         particle_tracer::load_balance_distribute   (      s
     if (neighbors[i])
       partitioner_->communicator()->recv(neighbors[i]->rank, 0, neighbor_particle_counts[i]);
 
-  // Compute local particle average.
-  auto partial_sum   = particles.size();
-  auto partial_count = 1;
-  for (auto neighbor_particle_count : neighbor_particle_counts)
-  {
-    if (neighbor_particle_count > particles.size()) continue;
-    partial_sum   += neighbor_particle_count;
-    partial_count ++;
-  }
-  auto partial_average = partial_sum / partial_count;
-  
-  auto final_sum   = particles.size();
-  auto final_count = 1;
-  for (auto neighbor_particle_count : neighbor_particle_counts)
-  {
-    if (neighbor_particle_count > partial_average) continue;
-    final_sum   += neighbor_particle_count;
-    final_count ++;
-  }
-  auto final_average = final_sum / final_count;
+  /// Compute workload deficit.
 
-  // Compute particles to be sent.
-  auto outgoing_particles = std::array<std::vector<particle>, 6> {};
+  // Compute average of neighbors with more workload than this process.
+  auto contributions     = std::array<std::size_t, 6> {};
+  auto contributor_count = 0;
+  contributions.fill(0);
   for (auto i = 0; i < neighbors.size(); ++i)
   {
-    if (neighbor_particle_counts[i] > final_average) continue;
+    if (!neighbors[i] || neighbor_particle_counts[i] < particles.size())
+      continue;
+    contributions[i] = neighbor_particle_counts[i];
+    contributor_count++;
+  }
+  auto average = (particles.size() + std::accumulate(contributions.begin(), contributions.end(), 0ull)) / (contributor_count + 1);
 
-    auto particle_count = final_average - neighbor_particle_counts[i];
-    if  (particle_count <= static_cast<std::int64_t>(particles.size()))
+  // Compute average of neighbors with more workload than the average until all contributing neighbors are above the average (i.e. only this process below the average).
+  for (auto i = 0; i < neighbors.size(); ++i)
+  {
+    contributions.fill(0);
+    contributor_count = 0;
+    for (auto i = 0; i < neighbors.size(); ++i)
     {
-      outgoing_particles[i].insert(outgoing_particles[i].end(), particles.end() - particle_count, particles.end());
-      particles.erase(particles.end() - particle_count, particles.end());
-
-      tbb::parallel_for(std::size_t(0), outgoing_particles[i].size(), std::size_t(1), [&] (const std::size_t index)
-      {
-        outgoing_particles[i][index].vector_field_index = i % 2 == 0 ? i + 1 : i - 1; // This process' +X neighbor treats this process as its -X neighbor and so on. 
-      });
+      if (!neighbors[i] || neighbor_particle_counts[i] < average)
+        continue;
+      contributions[i] = neighbor_particle_counts[i];
+      contributor_count++;
     }
+
+    const auto next_average = (particles.size() + std::accumulate(contributions.begin(), contributions.end(), 0ull)) / (contributor_count + 1);
+    if (average == next_average)
+      break;
+    average = next_average;
+  }
+
+  const auto total_deficit       = average - particles.size();
+  const auto total_contributions = std::accumulate(contributions.begin(), contributions.end(), 0ull);
+  
+  auto deficits        = std::array<std::size_t, 6> {};
+  auto maximum_surplus = std::array<std::size_t, 6> {};
+  deficits       .fill(0);
+  maximum_surplus.fill(0);
+  for (auto i = 0; i < neighbors.size(); ++i)
+    if (neighbors[i] && total_contributions != 0)
+      deficits[i] = total_deficit * (contributions[i] / total_contributions);
+
+  // Send / receive partial deficits (as partial maximum surplus).
+  for (auto i = 0; i < neighbors.size(); ++i)
+    if (neighbors[i])
+      partitioner_->communicator()->send(neighbors[i]->rank, 10, deficits       [i]);
+  for (auto i = 0; i < neighbors.size(); ++i)
+    if (neighbors[i])
+      partitioner_->communicator()->recv(neighbors[i]->rank, 10, maximum_surplus[i]);
+  
+  /// Compute workload surplus.
+
+  // Compute average of neighbors with less workload than this process.
+  contributions     = std::array<std::size_t, 6> {};
+  contributor_count = 0;
+  contributions.fill(0);
+  for (auto i = 0; i < neighbors.size(); ++i)
+  {
+    if (!neighbors[i] || neighbor_particle_counts[i] > particles.size())
+      continue;
+    contributions[i] = neighbor_particle_counts[i];
+    contributor_count++;
+  }
+  average = (particles.size() + std::accumulate(contributions.begin(), contributions.end(), 0ull)) / (1 + contributor_count);
+  
+  // Compute average of neighbors with less workload than the average until all contributing neighbors are below the average (i.e. only this process above the average).
+  for (auto i = 0; i < neighbors.size(); ++i)
+  {
+    contributions.fill(0);
+    contributor_count = 0;
+    for (auto i = 0; i < neighbors.size(); ++i)
+    {
+      if (!neighbors[i] || neighbor_particle_counts[i] > average)
+        continue;
+      contributions[i] = neighbor_particle_counts[i];
+      contributor_count++;
+    }
+
+    const auto next_average = (particles.size() + std::accumulate(contributions.begin(), contributions.end(), 0ull)) / (1 + contributor_count);
+    if (average == next_average)
+      break;
+    average = next_average;
+  }
+  
+  // Compute surplus particles.
+  auto surplus_particles = std::array<std::vector<particle>, 6> {};
+  for (auto i = 0; i < neighbors.size(); ++i)
+  {
+    if (!neighbors[i] || neighbor_particle_counts[i] > average)
+      continue;
+
+    const auto particle_count = std::min(maximum_surplus[i], average - neighbor_particle_counts[i]);
+
+    if (particle_count > particles.size())
+      continue;
+
+    surplus_particles[i].insert(surplus_particles[i].end(), particles.end() - particle_count, particles.end());
+    particles.erase(particles.end() - particle_count, particles.end());
+
+    tbb::parallel_for(std::size_t(0), surplus_particles[i].size(), std::size_t(1), [&](const std::size_t index)
+    {
+      surplus_particles[i][index].vector_field_index = i % 2 == 0 ? i + 1 : i - 1; // This process' +X neighbor treats this process as its -X neighbor and so on. 
+    });
   }
 
   // Send/receive particles.
@@ -114,7 +183,7 @@ void                         particle_tracer::load_balance_distribute   (      s
     if (!neighbors[i])
       continue;
 
-    partitioner_->communicator()->send(neighbors[i]->rank, 1, outgoing_particles[i]);
+    partitioner_->communicator()->send(neighbors[i]->rank, 1, surplus_particles[i]);
   }
   for (auto i = 0; i < neighbors.size(); ++i)
   {
