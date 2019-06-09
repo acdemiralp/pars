@@ -163,7 +163,7 @@ void                         particle_tracer::load_balance_distribute   (      s
     if (!neighbors[i] || neighbor_particle_counts[i] > average)
       continue;
 
-    const auto particle_count = std::min(maximum_surplus[i], average - neighbor_particle_counts[i]);
+    const auto particle_count = std::min(maximum_surplus[i], std::size_t(average - neighbor_particle_counts[i]));
 
     if (particle_count > particles.size())
       continue;

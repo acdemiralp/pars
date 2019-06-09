@@ -67,7 +67,7 @@ int main(int argc, char** argv)
   {
     configuration
     {
-      "/p/project/cjinm11/Private/demiralp1/data/pli/msa/MSA0309_s0536-0695_c.h5"     , // ~4 GB
+      "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c.h5"     , // ~4 GB
       1,
       {1, 2, 4, 8, 16, 24, 32, 64, 128, 256}, // Even a single machine can handle the non-scaled dataset.
       {1, 2, 4, 8, 16, 24},
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
     },
     configuration
     {
-      "/p/project/cjinm11/Private/demiralp1/data/pli/msa/MSA0309_s0536-0695_c_s2.h5"  , // ~27 GB
+      "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s2.h5"  , // ~27 GB
       2,
       {1, 2, 4, 8, 16, 24, 32, 64, 128, 256},
       {1, 2, 4, 8, 16, 24},
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
     },
     configuration
     {
-      "/p/project/cjinm11/Private/demiralp1/data/pli/msa/MSA0309_s0536-0695_c_s4.h5"  , // ~209 GB
+      "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s4.h5"  , // ~209 GB
       4,
       {1, 2, 4, 8, 16, 24, 32, 64, 128, 256},
       {1, 2, 4, 8, 16, 24},
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
     },
     configuration
     {
-      "/p/project/cjinm11/Private/demiralp1/data/pli/msa/MSA0309_s0536-0695_c_s8.h5"  , // ~1.7 TB
+      "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s8.h5"  , // ~1.7 TB
       8,
       {            16, 24, 32, 64, 128, 256},
       {1, 2, 4, 8, 16, 24},
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
     },
     configuration
     {
-      "/p/scratch/cjinm11/demiralp1/data/pli/msa/MSA0309_s0536-0695_c_s10.h5"         , // ~3.3 TB
+      "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s10.h5" , // ~3.3 TB
       10,
       {                    32, 64, 128, 256},
       {1, 2, 4, 8, 16, 24},
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
     },
     configuration
     {
-      "/p/scratch/cjinm11/demiralp1/data/pli/msa/MSA0309_s0536-0695_c_s16.h5"         , // ~14 TB
+      "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s16.h5" , // ~14 TB
       16,
       {                            128, 256},
       {1, 2, 4, 8, 16, 24},
@@ -142,7 +142,7 @@ int main(int argc, char** argv)
     for (auto& processor              : configuration.processors             ) {
     for (auto& seed_generation_stride : configuration.seed_generation_strides) {
     for (auto& seed_iteration         : configuration.seed_iterations        ) {
-    for (auto& load_balance           : configuration.load_balancing         ) {
+    for (auto  load_balance           : configuration.load_balancing         ) {
       auto name = std::string("benchmark") +
         "_sc" + std::to_string(configuration.dataset_scale) +
         "_n"  + std::to_string(node) +
