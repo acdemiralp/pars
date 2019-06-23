@@ -183,8 +183,8 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     {
       ray_tracer_.set_integral_curves(&integral_curves, settings.raytracing_streamline_radius() ? settings.raytracing_streamline_radius() : 1.0f);
     });
-    if (communicator_.rank() == 0) std::cout << "6.2::ray_tracer::trace\n";
-    recorder.record("6.2::ray_tracer::trace"              , [&] ()
+    if (communicator_.rank() == 0) std::cout << "6.3::ray_tracer::trace\n";
+    recorder.record("6.3::ray_tracer::trace"              , [&] ()
     {
       ray_tracer_.trace(settings.raytracing_iterations());
     });
