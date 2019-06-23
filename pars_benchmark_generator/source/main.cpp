@@ -34,19 +34,15 @@ std::string slurm_script_template = R"(#!/bin/bash
 #SBATCH --cpus-per-task=$3
 #SBATCH --ntasks-per-core=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --account=jinm11
 
-module load CMake/3.14.0
-module load Intel/2019.3.199-GCC-8.3.0
-module load IntelMPI/2019.3.199
-module load Boost/1.69.0-Python-2.7.16
-module load HDF5/1.10.5
-module load imkl/2019.3.199
-module load tbb/2019.4.199
+module load cmake/3.13.2
+module load gcc/8
+module load LIBRARIES
+module load boost/1_69_0
+module load hdf5/1.10.4
+module load inteltbb/2019
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/p/home/jusers/demiralp1/jureca/packages/ospray-1.7.3/build/
-
-srun --mpi=pmi2 /p/home/jusers/demiralp1/jureca/source/pars/build/pars_benchmark/pars_benchmark $3 ./$1.json
+srun --mpi=pmi2 /rwthfs/rz/cluster/home/ad784563/source/pars/build/pars_benchmark/pars_benchmark $3 ./$1.json
 )"; // $1 name, $2 nodes, $3 processors.
 
 struct configuration
@@ -69,9 +65,9 @@ int main(int argc, char** argv)
     {
       "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c.h5"     , // ~4 GB
       1,
-      {1, 2, 4, 8, 16, 24, 32, 64, 128, 256}, // Even a single machine can handle the non-scaled dataset.
-      {1, 2, 4, 8, 16, 24},
-      {1, 2, 4, 8, 16, 24, 32, 64, 128, 256, 512},
+      {1, 2, 4, 8, 16, 24, 32, 48, 64, 128, 256, 512, 1024}, // Even a single machine can handle the non-scaled dataset.
+      {1, 2, 4, 8, 16, 24, 32, 48},
+      {1, 2, 4, 8, 16, 24, 32, 48, 64, 128, 256, 512},
       {128, 256, 512, 1024, 2048, 4096},
       {true, false},
       {500.0, 750.0, -1250.0}
@@ -80,9 +76,9 @@ int main(int argc, char** argv)
     {
       "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s2.h5"  , // ~27 GB
       2,
-      {1, 2, 4, 8, 16, 24, 32, 64, 128, 256},
-      {1, 2, 4, 8, 16, 24},
-      {1, 2, 4, 8, 16, 24, 32, 64, 128, 256, 512},
+      {1, 2, 4, 8, 16, 24, 32, 48, 64, 128, 256, 512, 1024},
+      {1, 2, 4, 8, 16, 24, 32, 48},
+      {1, 2, 4, 8, 16, 24, 32, 48, 64, 128, 256, 512},
       {128, 256, 512, 1024, 2048, 4096},
       {true, false},
       {1000.0, 1500.0, -2500.0}
@@ -91,9 +87,9 @@ int main(int argc, char** argv)
     {
       "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s4.h5"  , // ~209 GB
       4,
-      {1, 2, 4, 8, 16, 24, 32, 64, 128, 256},
-      {1, 2, 4, 8, 16, 24},
-      {1, 2, 4, 8, 16, 24, 32, 64, 128, 256, 512},
+      {1, 2, 4, 8, 16, 24, 32, 48, 64, 128, 256, 512, 1024},
+      {1, 2, 4, 8, 16, 24, 32, 48},
+      {1, 2, 4, 8, 16, 24, 32, 48, 64, 128, 256, 512},
       {128, 256, 512, 1024, 2048, 4096},
       {true, false},
       {2000.0, 3000.0, -5000.0}
@@ -102,9 +98,9 @@ int main(int argc, char** argv)
     {
       "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s8.h5"  , // ~1.7 TB
       8,
-      {            16, 24, 32, 64, 128, 256},
-      {1, 2, 4, 8, 16, 24},
-      {1, 2, 4, 8, 16, 24, 32, 64, 128, 256, 512},
+      {            16, 24, 32, 48, 64, 128, 256, 512, 1024},
+      {1, 2, 4, 8, 16, 24, 32, 48},
+      {1, 2, 4, 8, 16, 24, 32, 48, 64, 128, 256, 512},
       {128, 256, 512, 1024, 2048, 4096},
       {true, false},
       {4000.0, 6000.0, -10000.0}
@@ -113,9 +109,9 @@ int main(int argc, char** argv)
     {
       "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s10.h5" , // ~3.3 TB
       10,
-      {                    32, 64, 128, 256},
-      {1, 2, 4, 8, 16, 24},
-      {1, 2, 4, 8, 16, 24, 32, 40, 64, 80, 128, 160, 256, 320, 512},
+      {                    32,     48, 64,     128,      256     , 512, 1024},
+      {1, 2, 4, 8, 16, 24, 32, 48},
+      {1, 2, 4, 8, 16, 24, 32, 40, 48, 64, 80, 128, 160, 256, 320, 512},
       {128, 256, 512, 1024, 2048, 4096},
       {true, false},
       {5000.0, 7500.0, -12500.0}
@@ -124,9 +120,9 @@ int main(int argc, char** argv)
     {
       "/rwthfs/rz/cluster/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c_s16.h5" , // ~14 TB
       16,
-      {                            128, 256},
-      {1, 2, 4, 8, 16, 24},
-      {1, 2, 4, 8, 16, 24, 32, 64, 128, 256, 512},
+      {                                128, 256, 512, 1024},
+      {1, 2, 4, 8, 16, 24, 32, 48},
+      {1, 2, 4, 8, 16, 24, 32, 48, 64, 128, 256, 512},
       {128, 256, 512, 1024, 2048, 4096},
       {true, false},
       {8000.0, 12000.0, -20000.0}
