@@ -188,6 +188,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     {
       ray_tracer_.trace(settings.raytracing_iterations());
     });
+    if (communicator_.rank() == 0) std::cout << "6.4::ray_tracer::serialize\n";
   });
 
   return {ray_tracer_.serialize(), session};
