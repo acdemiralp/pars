@@ -42,7 +42,7 @@ module load boost/1_69_0
 module load hdf5/1.10.4
 module load inteltbb/2019
 
-srun --mpi=pmi2 /rwthfs/rz/cluster/home/ad784563/source/pars/build/pars_benchmark/pars_benchmark $3 ./$1.json
+$MPIEXEC $FLAGS_MPI_BATCH /rwthfs/rz/cluster/home/ad784563/source/pars/build/pars_benchmark/pars_benchmark $3 ./$1.json
 )"; // $1 name, $2 nodes, $3 processors.
 
 struct configuration
