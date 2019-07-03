@@ -25,6 +25,8 @@ vector3 vector_field::interpolate(const vector4& position) const
   {
     multi_index[i] = std::floor((position[i] - offset[i]) / spacing[i]);
     weights    [i] = std::fmod ((position[i] - offset[i]) , spacing[i]) / spacing[i];
+    if (0 > multi_index[i] || multi_index[i] >= data.shape()[i] - 2)
+      return vector3(0, 0, 0);
   }
 
   const auto& c000 = data(std::array<integer, 3>{multi_index[0]    , multi_index[1]    , multi_index[2]    });

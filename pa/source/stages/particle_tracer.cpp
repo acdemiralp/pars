@@ -62,12 +62,16 @@ void                         particle_tracer::load_balance_distribute   (      s
   auto neighbor_particle_counts = std::array<std::size_t, 6> {};
   neighbor_particle_counts.fill(std::numeric_limits<std::size_t>::max());
 
+  std::vector<boost::mpi::request> requests;
   for (auto i = 0; i < neighbors.size(); ++i)
     if (neighbors[i])
-      partitioner_->communicator()->isend(neighbors[i]->rank, 0, particles.size());
+      requests.push_back(partitioner_->communicator()->isend(neighbors[i]->rank, 0, particles.size()));
   for (auto i = 0; i < neighbors.size(); ++i)
     if (neighbors[i])
       partitioner_->communicator()->recv (neighbors[i]->rank, 0, neighbor_particle_counts[i]);
+
+  for (auto& request : requests)
+    request.wait();
 
   /// Compute workload deficit.
 
@@ -115,13 +119,17 @@ void                         particle_tracer::load_balance_distribute   (      s
       deficits[i] = total_deficit * (contributions[i] / total_contributions);
 
   // Send / receive partial deficits (as partial maximum surplus).
+  requests.clear();
   for (auto i = 0; i < neighbors.size(); ++i)
     if (neighbors[i])
-      partitioner_->communicator()->isend(neighbors[i]->rank, 10, deficits       [i]);
+      requests.push_back(partitioner_->communicator()->isend(neighbors[i]->rank, 10, deficits[i]));
   for (auto i = 0; i < neighbors.size(); ++i)
     if (neighbors[i])
       partitioner_->communicator()->recv (neighbors[i]->rank, 10, maximum_surplus[i]);
-  
+
+  for (auto& request : requests)
+    request.wait();
+
   /// Compute workload surplus.
 
   // Compute average of neighbors with less workload than this process.
@@ -178,12 +186,13 @@ void                         particle_tracer::load_balance_distribute   (      s
   }
 
   // Send/receive particles.
+  requests.clear();
   for (auto i = 0; i < neighbors.size(); ++i)
   {
     if (!neighbors[i])
       continue;
 
-    partitioner_->communicator()->isend(neighbors[i]->rank, 1, surplus_particles[i]);
+    requests.push_back(partitioner_->communicator()->isend(neighbors[i]->rank, 1, surplus_particles[i]));
   }
   for (auto i = 0; i < neighbors.size(); ++i)
   {
@@ -194,6 +203,9 @@ void                         particle_tracer::load_balance_distribute   (      s
     partitioner_->communicator()->recv (neighbors[i]->rank, 1, temporary);
     particles.insert(particles.end(), temporary.begin(), temporary.end());
   }
+
+  for (auto& request : requests)
+    request.wait();
 }
 particle_tracer::round_info  particle_tracer::compute_round_info        (const std::vector<particle>& particles, const std::vector<integral_curves>& integral_curves                              )
 {
@@ -329,8 +341,9 @@ void                         particle_tracer::load_balance_collect      (       
   auto  minimum   = local_vector_field_->value().offset;
   auto  maximum   = local_vector_field_->value().offset + local_vector_field_->value().size;
 
+  std::vector<boost::mpi::request> requests;
   for (auto& neighbor : round_info.neighbor_out_of_bounds_particles)
-    partitioner_->communicator()->isend(neighbor.first, 2, neighbor.second);
+    requests.push_back(partitioner_->communicator()->isend(neighbor.first, 2, neighbor.second));
 
   for (auto& neighbor : round_info.neighbor_out_of_bounds_particles)
   {
@@ -356,6 +369,9 @@ void                         particle_tracer::load_balance_collect      (       
         accessor->second.push_back(particle);
     });
   }
+
+  for (auto& request : requests)
+    request.wait();
 }
 void                         particle_tracer::out_of_bounds_distribute  (      std::vector<particle>& particles,                                                      const round_info& round_info)
 {
