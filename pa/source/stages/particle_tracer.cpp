@@ -361,8 +361,9 @@ void                         particle_tracer::out_of_bounds_distribute  (      s
 {
   particles.clear();
 
+  std::vector<boost::mpi::request> requests;
   for (auto& neighbor : round_info.out_of_bounds_particles)
-    partitioner_->communicator()->isend(neighbor.first, 3, neighbor.second);
+    requests.push_back(partitioner_->communicator()->isend(neighbor.first, 3, neighbor.second));
 
   for (auto& neighbor : round_info.out_of_bounds_particles)
   {
@@ -370,6 +371,9 @@ void                         particle_tracer::out_of_bounds_distribute  (      s
     partitioner_->communicator()->recv (neighbor.first, 3, temporary);
     particles.insert(particles.end(), temporary.begin(), temporary.end());
   }
+
+  for (auto& request : requests)
+    request.wait();
 }
 bool                         particle_tracer::check_completion          (const std::vector<particle>& particles                                                                                   )
 {
