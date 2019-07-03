@@ -91,36 +91,44 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     {
       pa::particle_tracer::round_info round_info;
 
+      // if (communicator_.rank() == 0) std::cout << "3.1." + std::to_string(round_counter) + ".0::particle_tracer::load_balance_distribute\n";
       recorder.record("3.1." + std::to_string(round_counter) + ".0::particle_tracer::load_balance_distribute"   , [&]()
       {
         if (settings.particle_tracing_load_balance())
                      particle_tracer_.load_balance_distribute (seeds                             );
       });
+      // if (communicator_.rank() == 0) std::cout << "3.1." + std::to_string(round_counter) + ".1::particle_tracer::compute_round_info\n";
       recorder.record("3.1." + std::to_string(round_counter) + ".1::particle_tracer::compute_round_info"        , [&]()
       {
         round_info = particle_tracer_.compute_round_info      (seeds, integral_curves            );
       });
+      // if (communicator_.rank() == 0) std::cout << "3.1." + std::to_string(round_counter) + ".2::particle_tracer::allocate\n";
       recorder.record("3.1." + std::to_string(round_counter) + ".2::particle_tracer::allocate"                  , [&]()
       {
                      particle_tracer_.allocate                (       integral_curves, round_info);
       });
+      // if (communicator_.rank() == 0) std::cout << "3.1." + std::to_string(round_counter) + ".3::particle_tracer::initialize\n";
       recorder.record("3.1." + std::to_string(round_counter) + ".3::particle_tracer::initialize"                , [&]()
       {
                      particle_tracer_.initialize              (seeds, integral_curves, round_info);
       });
+      // if (communicator_.rank() == 0) std::cout << "3.1." + std::to_string(round_counter) + ".4::particle_tracer::trace\n";
       recorder.record("3.1." + std::to_string(round_counter) + ".4::particle_tracer::trace"                     , [&]()
       {
                      particle_tracer_.trace                   (seeds, integral_curves, round_info);
       });
+      // if (communicator_.rank() == 0) std::cout << "3.1." + std::to_string(round_counter) + ".5::particle_tracer::load_balance_collect\n";
       recorder.record("3.1." + std::to_string(round_counter) + ".5::particle_tracer::load_balance_collect"      , [&]()
       {
         if (settings.particle_tracing_load_balance())
                      particle_tracer_.load_balance_collect    (                        round_info);
       });
+      // if (communicator_.rank() == 0) std::cout << "3.1." + std::to_string(round_counter) + ".6::particle_tracer::out_of_bounds_redistribute\n";
       recorder.record("3.1." + std::to_string(round_counter) + ".6::particle_tracer::out_of_bounds_redistribute", [&]()
       {
                      particle_tracer_.out_of_bounds_distribute(seeds,                  round_info);
       });
+      // if (communicator_.rank() == 0) std::cout << "3.1." + std::to_string(round_counter) + ".7::particle_tracer::check_completion\n";
       recorder.record("3.1." + std::to_string(round_counter) + ".7::particle_tracer::check_completion"          , [&]()
       {
         complete   = particle_tracer_.check_completion        (seeds                             );
