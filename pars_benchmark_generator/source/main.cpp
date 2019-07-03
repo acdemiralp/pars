@@ -5,6 +5,9 @@
 #include <vector>
 
 std::string settings_template = R"({
+  "mode"                           : "streamlines_and_volume",
+  "volume_type"                    : "retardation",
+
   "dataset_filepath"               : "$1",
 
   "seed_generation_stride"         : [ $2, $2, $2 ],
