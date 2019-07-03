@@ -132,9 +132,24 @@ void  ray_tracer::set_integral_curves(std::vector<pa::integral_curves>* integral
     model_  ->addGeometry(*geometry);
   }
 
+  if (geometry_.empty())
+  {
+    const auto vertex   = vertex_data_.emplace_back(new ospray::cpp::Data(0, OSP_FLOAT3A, nullptr)).get(); vertex->commit();
+    const auto color    = color_data_ .emplace_back(new ospray::cpp::Data(0, OSP_FLOAT4 , nullptr)).get(); color ->commit();
+    const auto index    = index_data_ .emplace_back(new ospray::cpp::Data(0, OSP_INT    , nullptr)).get(); index ->commit();
+    const auto geometry = geometry_   .emplace_back(new ospray::cpp::Geometry("streamlines")).get();
+    geometry->setMaterial(material);
+    geometry->set        ("vertex"      , *vertex);
+    geometry->set        ("vertex.color", *color );
+    geometry->set        ("index"       , *index );
+    geometry->set        ("radius"      , radius );
+    geometry->commit     ();
+    model_->addGeometry(*geometry);
+  }
+
   model_->set   ("id", partitioner_->local_rank_info()->rank);
   model_->commit(); // Very heavy.
-  
+
   renderer_->set   ("model", *model_);
   renderer_->commit();
 
