@@ -1,5 +1,7 @@
 #include <pars/stages/ray_tracer.hpp>
 
+#include <tbb/tbb.h>
+
 namespace pars
 {
 ray_tracer::ray_tracer (pa::partitioner* partitioner, const std::size_t thread_count) : partitioner_(partitioner), raw_communicator_(*partitioner->communicator())
@@ -113,24 +115,31 @@ void  ray_tracer::set_volume         (pa::scalar_field* scalar_field)
   if (volume_)
     model_->removeVolume(*volume_);
 
+  boost::multi_array<float, 3> inverted_data(boost::extents[scalar_field->data.shape()[2]][scalar_field->data.shape()[1]][scalar_field->data.shape()[0]]);
+  tbb::parallel_for(std::size_t(0), inverted_data.shape()[0], std::size_t(1), [&] (const std::size_t x) {
+  tbb::parallel_for(std::size_t(0), inverted_data.shape()[1], std::size_t(1), [&] (const std::size_t y) {
+  tbb::parallel_for(std::size_t(0), inverted_data.shape()[2], std::size_t(1), [&] (const std::size_t z) {
+    inverted_data[x][y][z] = scalar_field->data[z][y][x];
+  });});});
+
   volume_      = std::make_unique<ospray::cpp::Volume>("shared_structured_volume"); // "block_bricked_volume"
-  volume_data_ = std::make_unique<ospray::cpp::Data>(scalar_field->data.num_elements(), OSP_FLOAT, scalar_field->data.origin(), OSP_DATA_SHARED_BUFFER); volume_data_->commit();
+  volume_data_ = std::make_unique<ospray::cpp::Data>(inverted_data.num_elements(), OSP_FLOAT, inverted_data.data()); volume_data_->commit();
   volume_->set      ("dimensions"      , ospcommon::vec3i(scalar_field->data.shape()[0], scalar_field->data.shape()[1], scalar_field->data.shape()[2]));
   volume_->set      ("gridOrigin"      , ospcommon::vec3f(scalar_field->offset      [0], scalar_field->offset      [1], scalar_field->offset      [2]));
   volume_->set      ("gridSpacing"     , ospcommon::vec3f(scalar_field->spacing     [0], scalar_field->spacing     [1], scalar_field->spacing     [2]));
   volume_->set      ("transferFunction", *transfer_function_);
   volume_->set      ("voxelType"       , "float");
-  volume_->set      ("voxelRange"      , ospcommon::vec2f(0.0f, 1.0f));
+  //volume_->set    ("voxelRange"      , ospcommon::vec2f(0.0f, 1.0f));
   volume_->set      ("voxelData"       , *volume_data_);
   //volume_->setRegion(scalar_field->data.origin(), ospcommon::vec3i {0, 0, 0}, ospcommon::vec3i(scalar_field->data.shape()[0], scalar_field->data.shape()[1], scalar_field->data.shape()[2]));
   volume_->commit   ();
-                    
+
   model_ ->addVolume(*volume_);
   
-  const ospcommon::vec3f region_lower_bounds { scalar_field->offset[0]                        , scalar_field->offset[1]                        , scalar_field->offset[2]                         };
-  const ospcommon::vec3f region_upper_bounds { scalar_field->offset[0] + scalar_field->size[0], scalar_field->offset[1] + scalar_field->size[1], scalar_field->offset[2] + scalar_field->size[2] };
-  model_ ->set      ("region.lower", region_lower_bounds);
-  model_ ->set      ("region.upper", region_upper_bounds);
+  //const ospcommon::vec3f region_lower_bounds { scalar_field->offset[0]                        , scalar_field->offset[1]                        , scalar_field->offset[2]                         };
+  //const ospcommon::vec3f region_upper_bounds { scalar_field->offset[0] + scalar_field->size[0], scalar_field->offset[1] + scalar_field->size[1], scalar_field->offset[2] + scalar_field->size[2] };
+  //model_ ->set      ("region.lower", region_lower_bounds);
+  //model_ ->set      ("region.upper", region_upper_bounds);
   
   model_ ->commit   ();
 
