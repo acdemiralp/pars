@@ -40,9 +40,20 @@ ray_tracer::ray_tracer (pa::partitioner* partitioner, const std::size_t thread_c
   geometry_[0]->set        ("radius"      , 0.1F);
   geometry_[0]->setMaterial(material);
   geometry_[0]->commit     ();
+
+  const std::vector<std::array<float, 3>> colors    {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}};
+  const std::vector<float>                opacities {0.0001f, 0.0255f};
+  transfer_function_     = std::make_unique<ospray::cpp::TransferFunction>("piecewise_linear");
+  transfer_color_data_   = std::make_unique<ospray::cpp::Data>(colors   .size(), OSP_FLOAT3, colors   .data()); transfer_color_data_  ->commit();
+  transfer_opacity_data_ = std::make_unique<ospray::cpp::Data>(opacities.size(), OSP_FLOAT , opacities.data()); transfer_opacity_data_->commit();
+  transfer_function_->set   ("colors"    , *transfer_color_data_       );
+  transfer_function_->set   ("opacities" , *transfer_opacity_data_     );
+  transfer_function_->set   ("valueRange", ospcommon::vec2f{0.0f, 1.0f});
+  transfer_function_->commit();
   
   model_ = std::make_unique<ospray::cpp::Model>();
   model_->addGeometry(*geometry_[0]);
+
   model_->set        ("id", partitioner_->local_rank_info()->rank);
   model_->commit     ();
   
@@ -74,7 +85,7 @@ ray_tracer::ray_tracer (pa::partitioner* partitioner, const std::size_t thread_c
   renderer_->set   ("aoTransparencyEnabled", false   );
   renderer_->set   ("oneSidedLighting"     , true    );
   renderer_->set   ("spp"                  , 1       );
-  renderer_->set   ("bgColor"              , 1.0F, 1.0F, 1.0F, 1.0F);
+  renderer_->set   ("bgColor"              , 0.0F, 0.0F, 0.0F, 1.0F);
   renderer_->set   ("camera"               , *camera_);
   renderer_->set   ("lights"               , *lights_);
   renderer_->set   ("model"                , *model_ );
@@ -97,6 +108,34 @@ ray_tracer::~ray_tracer()
   ospShutdown();
 }
 
+void  ray_tracer::set_volume         (pa::scalar_field* scalar_field)
+{
+  if (volume_)
+    model_->removeVolume(*volume_);
+
+  volume_      = std::make_unique<ospray::cpp::Volume>("shared_structured_volume"); // "block_bricked_volume"
+  volume_data_ = std::make_unique<ospray::cpp::Data>(scalar_field->data.num_elements(), OSP_FLOAT, scalar_field->data.origin(), OSP_DATA_SHARED_BUFFER); volume_data_->commit();
+  volume_->set      ("dimensions"      , ospcommon::vec3i(scalar_field->data.shape()[0], scalar_field->data.shape()[1], scalar_field->data.shape()[2]));
+  volume_->set      ("gridOrigin"      , ospcommon::vec3f(scalar_field->offset      [0], scalar_field->offset      [1], scalar_field->offset      [2]));
+  volume_->set      ("gridSpacing"     , ospcommon::vec3f(scalar_field->spacing     [0], scalar_field->spacing     [1], scalar_field->spacing     [2]));
+  volume_->set      ("transferFunction", *transfer_function_);
+  volume_->set      ("voxelType"       , "float");
+  volume_->set      ("voxelRange"      , ospcommon::vec2f(0.0f, 1.0f));
+  volume_->set      ("voxelData"       , *volume_data_);
+  //volume_->setRegion(scalar_field->data.origin(), ospcommon::vec3i {0, 0, 0}, ospcommon::vec3i(scalar_field->data.shape()[0], scalar_field->data.shape()[1], scalar_field->data.shape()[2]));
+  volume_->commit   ();
+                    
+  model_ ->addVolume(*volume_);
+  
+  const ospcommon::vec3f region_lower_bounds { scalar_field->offset[0]                        , scalar_field->offset[1]                        , scalar_field->offset[2]                         };
+  const ospcommon::vec3f region_upper_bounds { scalar_field->offset[0] + scalar_field->size[0], scalar_field->offset[1] + scalar_field->size[1], scalar_field->offset[2] + scalar_field->size[2] };
+  model_ ->set      ("region.lower", region_lower_bounds);
+  model_ ->set      ("region.upper", region_upper_bounds);
+  
+  model_ ->commit   ();
+
+  framebuffer_->clear(OSP_FB_COLOR | OSP_FB_ACCUM);
+}
 void  ray_tracer::set_integral_curves(std::vector<pa::integral_curves>* integral_curves, float radius)
 {
   auto material = ospray::cpp::Material("scivis", "OBJMaterial");
@@ -104,11 +143,14 @@ void  ray_tracer::set_integral_curves(std::vector<pa::integral_curves>* integral
   material.set   ("Ns", 10.0F);
   material.commit();
 
-  model_ = std::make_unique<ospray::cpp::Model>();
+  for (auto& geometry : geometry_)
+    model_->removeGeometry(*geometry);
+
   geometry_   .clear();
   vertex_data_.clear();
   color_data_ .clear();
   index_data_ .clear();
+
   geometry_   .reserve(integral_curves->size());
   vertex_data_.reserve(integral_curves->size());
   color_data_ .reserve(integral_curves->size());
@@ -147,11 +189,7 @@ void  ray_tracer::set_integral_curves(std::vector<pa::integral_curves>* integral
     model_->addGeometry(*geometry);
   }
 
-  model_->set   ("id", partitioner_->local_rank_info()->rank);
   model_->commit(); // Very heavy.
-
-  renderer_->set   ("model", *model_);
-  renderer_->commit();
 
   framebuffer_->clear(OSP_FB_COLOR | OSP_FB_ACCUM);
 }
