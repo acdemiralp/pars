@@ -14,7 +14,7 @@ std::unique_ptr<vector_field> flow_map_generator::generate  (const scalar time, 
   auto particles = std::vector     <particle>    ();
   auto flow_map  = std::make_unique<vector_field>();
   allocate  (resolution_scale,            flow_map);
-  initialize(resolution_scale, particles, flow_map);
+  initialize(                  particles, flow_map);
   trace     (                  particles, flow_map);
   return flow_map;
 }
@@ -35,10 +35,10 @@ void                          flow_map_generator::allocate  (const scalar resolu
     base_spacing[1] / resolution_scale,
     base_spacing[2] / resolution_scale};
 }
-void                          flow_map_generator::initialize(const scalar resolution_scale, std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map)
+void                          flow_map_generator::initialize(                               std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map)
 {
   // Create particles centered at each voxel of the vector field.
-
+  seed_generator::generate(flow_map->offset, flow_map->size, vector3(1, 1, 1), 100);
 }
 void                          flow_map_generator::trace     (                               std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map)
 {

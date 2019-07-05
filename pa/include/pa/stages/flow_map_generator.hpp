@@ -23,7 +23,7 @@ public:
 
 protected:
   void                          allocate  (const scalar resolution_scale,                                   std::unique_ptr<vector_field>& flow_map);
-  void                          initialize(const scalar resolution_scale, std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
+  void                          initialize(                               std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
   void                          trace     (                               std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
 };
 }
