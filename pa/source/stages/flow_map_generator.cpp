@@ -4,7 +4,7 @@
 
 namespace pa
 {
-flow_map_generator::flow_map_generator(partitioner* partitioner) : particle_tracer(partitioner)
+flow_map_generator::flow_map_generator(partitioner* partitioner) : particle_advector(partitioner)
 {
 
 }
@@ -15,7 +15,7 @@ std::unique_ptr<vector_field> flow_map_generator::generate  (const std::size_t i
   auto flow_map  = std::make_unique<vector_field>();
   allocate  (resolution_scale,            flow_map);
   initialize(iterations      , particles, flow_map);
-  advect    (                  particles);
+  advect    (                  particles          );
   assign    (                  particles, flow_map);
   return flow_map;
 }
@@ -40,11 +40,6 @@ void                          flow_map_generator::initialize(const std::size_t i
 {
   // Create particles centered at each voxel of the vector field.
   particles = seed_generator::generate(flow_map->offset, flow_map->size, vector3(1, 1, 1), iterations, partitioner_->communicator()->rank());
-}
-void                          flow_map_generator::advect    (                                          std::vector<particle>& particles)
-{
-  // Advect particles. 
-  advect(particles);
 }
 void                          flow_map_generator::assign    (                                    const std::vector<particle>& particles,       std::unique_ptr<vector_field>& flow_map)
 {

@@ -24,7 +24,6 @@ public:
   // Generate sub-methods for separate benchmarking.
   void                          allocate  (const scalar      resolution_scale,                                               std::unique_ptr<vector_field>& flow_map);
   void                          initialize(const std::size_t iterations      ,       std::vector<particle>& particles, const std::unique_ptr<vector_field>& flow_map);
-  void                          advect    (                                          std::vector<particle>& particles);
   void                          assign    (                                    const std::vector<particle>& particles,       std::unique_ptr<vector_field>& flow_map);
 };
 }
