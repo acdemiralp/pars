@@ -19,12 +19,12 @@ public:
   flow_map_generator& operator=(const flow_map_generator&  that) = delete ;
   flow_map_generator& operator=(      flow_map_generator&& temp) = delete ;
 
-  std::unique_ptr<vector_field> generate  (const scalar time, const scalar resolution_scale = 1);
+  std::unique_ptr<vector_field> generate  (const std::size_t iterations, const scalar resolution_scale = 1);
 
 protected:
-  void                          allocate  (const scalar resolution_scale,                                   std::unique_ptr<vector_field>& flow_map);
-  void                          initialize(                               std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
-  void                          trace     (                               std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
+  void                          allocate  (const scalar      resolution_scale,                                   std::unique_ptr<vector_field>& flow_map);
+  void                          initialize(const std::size_t iterations      , std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
+  void                          trace     (                                    std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
 };
 }
 
