@@ -260,7 +260,7 @@ void                         particle_tracer::trace                     (const s
     auto& particle      = particles[particle_index];
     auto& vector_field  = particle.vector_field_index == -1 ? local_vector_field_->value() : neighbor_vector_fields_->at(particle.vector_field_index).value();
     auto  minimum       = vector_field.offset;
-    auto  maximum       = vector_field.offset + vector_field.size - vector_field.spacing; // Subtract spacing (1 voxel) from the size to get the maximum.
+    auto  maximum       = vector_field.offset + vector_field.size;
     auto  integrator    = integrator_;
 
     for (std::size_t iteration_index = 1; iteration_index < particle.remaining_iterations; ++iteration_index)
