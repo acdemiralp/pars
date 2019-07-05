@@ -7,7 +7,7 @@ flow_map_generator::flow_map_generator(partitioner* partitioner) : particle_trac
 
 }
 
-std::unique_ptr<scalar_field> flow_map_generator::generate(float time)
+std::unique_ptr<scalar_field> flow_map_generator::generate(scalar time)
 {
 
 }

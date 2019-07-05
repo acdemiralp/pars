@@ -19,7 +19,7 @@ public:
   flow_map_generator& operator=(const flow_map_generator&  that) = delete ;
   flow_map_generator& operator=(      flow_map_generator&& temp) = delete ;
 
-  std::unique_ptr<scalar_field> generate(float time);
+  std::unique_ptr<scalar_field> generate(scalar time);
 
 protected:
 
