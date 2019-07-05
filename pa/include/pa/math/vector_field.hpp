@@ -20,5 +20,4 @@ struct PA_EXPORT vector_field
 };
 }
 
-
 #endif
