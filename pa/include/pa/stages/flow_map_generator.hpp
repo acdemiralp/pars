@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include <pa/math/scalar_field.hpp>
+#include <pa/math/vector_field.hpp>
 #include <pa/stages/particle_tracer.hpp>
 #include <pa/export.hpp>
 
@@ -19,10 +19,12 @@ public:
   flow_map_generator& operator=(const flow_map_generator&  that) = delete ;
   flow_map_generator& operator=(      flow_map_generator&& temp) = delete ;
 
-  std::unique_ptr<scalar_field> generate(scalar time);
+  std::unique_ptr<vector_field> generate  (const scalar time, const scalar resolution_scale = 1);
 
 protected:
-
+  void                          allocate  (const scalar resolution_scale,                                   std::unique_ptr<vector_field>& flow_map);
+  void                          initialize(const scalar resolution_scale, std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
+  void                          trace     (                               std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
 };
 }
 
