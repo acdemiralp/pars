@@ -4,12 +4,12 @@
 #include <memory>
 
 #include <pa/math/vector_field.hpp>
-#include <pa/stages/particle_tracer.hpp>
+#include <pa/stages/particle_advector.hpp>
 #include <pa/export.hpp>
 
 namespace pa
 {
-class PA_EXPORT flow_map_generator : public particle_tracer
+class PA_EXPORT flow_map_generator : public particle_advector
 {
 public:
   explicit flow_map_generator  (partitioner* partitioner);
@@ -21,10 +21,11 @@ public:
 
   std::unique_ptr<vector_field> generate  (const std::size_t iterations, const scalar resolution_scale = 1);
 
-protected:
-  void                          allocate  (const scalar      resolution_scale,                                   std::unique_ptr<vector_field>& flow_map);
-  void                          initialize(const std::size_t iterations      , std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
-  void                          trace     (                                    std::vector<particle>& particles, std::unique_ptr<vector_field>& flow_map);
+  // Generate sub-methods for separate benchmarking.
+  void                          allocate  (const scalar      resolution_scale,                                               std::unique_ptr<vector_field>& flow_map);
+  void                          initialize(const std::size_t iterations      ,       std::vector<particle>& particles, const std::unique_ptr<vector_field>& flow_map);
+  void                          advect    (                                          std::vector<particle>& particles);
+  void                          assign    (                                    const std::vector<particle>& particles,       std::unique_ptr<vector_field>& flow_map);
 };
 }
 
