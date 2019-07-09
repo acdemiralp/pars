@@ -9,7 +9,6 @@
 
 namespace pa
 {
-// Type used for exchanging particles among MPI processes and for initial seed generation.
 struct PA_EXPORT particle
 {
   // Function for boost::serialization which is used by boost::mpi.
