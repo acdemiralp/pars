@@ -6,7 +6,7 @@
 
 namespace pa
 {
-std::vector<particle> seed_generator::generate(const vector3& offset, const vector3& size, const vector3& stride, integer remaining_iterations)
+std::vector<particle> seed_generator::generate(const vector3& offset, const vector3& size, const vector3& stride, integer remaining_iterations, integer rank)
 {
   ivector3 particles_per_dimension = (size.array() / stride.array()).cast<integer>();
 
@@ -15,7 +15,7 @@ std::vector<particle> seed_generator::generate(const vector3& offset, const vect
   {
     ivector3 multi_index = unravel_index(index, particles_per_dimension);
     vector3  position    = offset.array() + stride.array() * multi_index.cast<scalar>().array();
-    particles[index]     = particle {vector4(position[0], position[1], position[2], 0), remaining_iterations, -1};
+    particles[index]     = particle {vector4(position[0], position[1], position[2], 0), remaining_iterations, -1, rank, multi_index};
   });
   return particles;
 }

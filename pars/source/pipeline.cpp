@@ -54,7 +54,8 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
         local_vector_field->offset,
         local_vector_field->size  ,
         local_vector_field->spacing.array() * stride.array(),
-        settings.seed_generation_iterations());
+        settings.seed_generation_iterations(),
+        communicator_.rank());
     });
 
     if (communicator_.rank() == 0) std::cout << "3.0::particle_tracer::initialize\n";

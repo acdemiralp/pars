@@ -20,6 +20,14 @@ using integer  = std::int32_t   ;
 using ivector2 = Eigen::Vector2i;
 using ivector3 = Eigen::Vector3i;
 using ivector4 = Eigen::Vector4i;
+
+using matrix2  = Eigen::Matrix2f;
+using matrix3  = Eigen::Matrix3f;
+using matrix4  = Eigen::Matrix4f;
+
+using imatrix2 = Eigen::Matrix2i;
+using imatrix3 = Eigen::Matrix3i;
+using imatrix4 = Eigen::Matrix4i;
 }
 
 #endif
