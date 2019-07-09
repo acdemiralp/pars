@@ -3,6 +3,8 @@
 #include <bm/bm.hpp>
 #include <tbb/tbb.h>
 
+#include <pa/stages/flow_map_generator.hpp>
+#include <pa/stages/ftle_map_generator.hpp>
 #include <pa/stages/color_generator.hpp>
 #include <pa/stages/index_generator.hpp>
 #include <pa/stages/seed_generator.hpp>
@@ -247,6 +249,83 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
   });
 
   return {ray_tracer_.serialize(), session};
+}
+                 bm::mpi_session<>  pipeline::execute_ftle(const settings& settings)
+{
+  pa::flow_map_generator flow_map_generator(&partitioner_);
+  pa::ftle_map_generator ftle_map_generator(&partitioner_);
+
+  std::optional  <pa::vector_field> vector_field;
+  std::unique_ptr<pa::vector_field> flow_map    ;
+  std::unique_ptr<pa::scalar_field> ftle_map    ;
+
+  auto session = bm::run_mpi<double, std::milli>([&] (bm::session_recorder<double, std::milli>& recorder)
+  {
+    if (communicator_.rank() == 0) std::cout << "1.0::data_loader::set_file\n";
+    recorder.record("1.0::data_loader::set_file"               , [&] ()
+    {
+      data_loader_.set_file(settings.dataset_filepath());
+    });
+    if (communicator_.rank() == 0) std::cout << "1.1::data_loader::load_dimensions\n";
+    recorder.record("1.1::data_loader::load_dimensions"        , [&] ()
+    {
+      auto dimensions = data_loader_.load_dimensions();
+      partitioner_.set_domain_size({dimensions[0], dimensions[1], dimensions[2]});
+    });
+    if (communicator_.rank() == 0) std::cout << "1.2::data_loader::load_local_vector_field\n";
+    recorder.record("1.2::data_loader::load_local_vector_field", [&] ()
+    {
+      vector_field = data_loader_.load_local_vector_field();
+    });
+
+    if (communicator_.rank() == 0) std::cout << "2.0::flow_map_generator::initialize\n";
+    recorder.record("2.0::flow_map_generator::initialize"      , [&] ()
+    {
+      flow_map_generator.set_vector_field(&vector_field.value());
+      flow_map_generator.set_step_size   (settings.particle_tracing_step_size());
+      if      (settings.particle_tracing_integrator() == std::string("euler"))
+        flow_map_generator.set_integrator(pa::euler_integrator                       ());
+      else if (settings.particle_tracing_integrator() == std::string("modified_midpoint"))
+        flow_map_generator.set_integrator(pa::modified_midpoint_integrator           ());
+      else if (settings.particle_tracing_integrator() == std::string("runge_kutta_4"))
+        flow_map_generator.set_integrator(pa::runge_kutta_4_integrator               ());
+      else if (settings.particle_tracing_integrator() == std::string("runge_kutta_cash_karp_54"))
+        flow_map_generator.set_integrator(pa::runge_kutta_cash_karp_54_integrator    ());
+      else if (settings.particle_tracing_integrator() == std::string("runge_kutta_dormand_prince_5"))
+        flow_map_generator.set_integrator(pa::runge_kutta_dormand_prince_5_integrator());
+      else if (settings.particle_tracing_integrator() == std::string("runge_kutta_fehlberg_78"))
+        flow_map_generator.set_integrator(pa::runge_kutta_fehlberg_78_integrator     ());
+      else if (settings.particle_tracing_integrator() == std::string("adams_bashforth_2"))
+        flow_map_generator.set_integrator(pa::adams_bashforth_2_integrator           ());
+      else if (settings.particle_tracing_integrator() == std::string("adams_bashforth_moulton_2"))
+        flow_map_generator.set_integrator(pa::adams_bashforth_moulton_2_integrator   ());
+    });
+    if (communicator_.rank() == 0) std::cout << "2.1::flow_map_generator::generate\n";
+    recorder.record("2.1::flow_map_generator::generate"        , [&]()
+    {
+      flow_map = flow_map_generator.generate(settings.seed_generation_iterations(), pa::scalar(1) / settings.seed_generation_stride()[0]);
+    });
+    
+    if (communicator_.rank() == 0) std::cout << "3.0::ftle_map_generator::initialize\n";
+    recorder.record("3.0::ftle_map_generator::initialize"      , [&] ()
+    {
+      ftle_map_generator.set_flow_map(flow_map.get());
+      ftle_map_generator.set_time    (settings.particle_tracing_step_size() * settings.seed_generation_iterations());
+    });
+    if (communicator_.rank() == 0) std::cout << "3.1::ftle_map_generator::generate\n";
+    recorder.record("3.1::ftle_map_generator::generate"        , [&] ()
+    {
+      ftle_map = ftle_map_generator.generate();
+    });
+    
+    if (communicator_.rank() == 0) std::cout << "4.0::data_loader::save_ftle_map\n";
+    recorder.record("4.0::data_loader::save_ftle_map"          , [&] ()
+    {
+      data_loader_.save_ftle_field("ftle", ftle_map.get());
+    });
+  });
+
+  return session;
 }
 
 boost::mpi::communicator*           pipeline::communicator()

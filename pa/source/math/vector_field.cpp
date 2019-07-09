@@ -14,7 +14,7 @@ bool                          vector_field::contains   (const vector4& position)
   for (auto i = 0; i < 3; ++i)
   {
     const auto subscript = std::floor((position[i] - offset[i]) / spacing[i]);
-    if (0.0 > subscript || subscript >= data.shape()[i] - 1)
+    if (0 > std::size_t(subscript) || std::size_t(subscript) >= data.shape()[i] - 1)
       return false;
   }
   return true;

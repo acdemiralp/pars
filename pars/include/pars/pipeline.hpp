@@ -35,7 +35,8 @@ public:
   pipeline& operator=(      pipeline&&  temp) = default;
 
   std::pair<image, bm::mpi_session<>> execute     (const settings& settings);
-
+                   bm::mpi_session<>  execute_ftle(const settings& settings);
+  
   boost::mpi::communicator*           communicator();
 
 protected:

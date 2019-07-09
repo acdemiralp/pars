@@ -31,6 +31,8 @@ public:
   std::optional<vector_field>                load_local_vector_field    ();
   std::array<std::optional<vector_field>, 6> load_neighbor_vector_fields();
 
+  void                                       save_ftle_field            (const std::string& name, scalar_field* ftle_field);
+
 protected:
   void                                       load_scalar_field          (const std::string& name    , const partitioner::rank_info& rank_info, std::optional<scalar_field>& scalar_field);
   void                                       load_vector_field          (                             const partitioner::rank_info& rank_info, std::optional<vector_field>& vector_field);

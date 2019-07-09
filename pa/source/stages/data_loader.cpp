@@ -17,9 +17,9 @@ data_loader::data_loader(partitioner* partitioner) : partitioner_(partitioner)
 void                                       data_loader::set_file                   (const std::string& filepath )
 {
 #ifdef H5_HAVE_PARALLEL
-  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadOnly, HighFive::MPIOFileDriver(*partitioner_->communicator(), MPI_INFO_NULL));
+  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadWrite, HighFive::MPIOFileDriver(*partitioner_->communicator(), MPI_INFO_NULL));
 #else
-  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadOnly);
+  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadWrite);
 #endif
 }
 
@@ -102,5 +102,20 @@ void                                       data_loader::load_vector_field       
 
   vector_field->offset = rank_info.offset          .cast<float>().array() * vector_field->spacing.array();
   vector_field->size   = partitioner_->block_size().cast<float>().array() * vector_field->spacing.array();
+}
+  
+void                                       data_loader::save_ftle_field            (const std::string& name, scalar_field* ftle_field)
+{
+  if (file_->exist("ftle"))
+  {
+    auto dataset = file_->getDataSet(name);
+    dataset.resize({ftle_field->data.shape()[0], ftle_field->data.shape()[1], ftle_field->data.shape()[2]});
+    dataset.write (ftle_field->data);
+  }
+  else
+  {
+    auto dataset = file_->createDataSet<float>(name, HighFive::DataSpace::From(ftle_field->data));
+    dataset.write (ftle_field->data);
+  }
 }
 }

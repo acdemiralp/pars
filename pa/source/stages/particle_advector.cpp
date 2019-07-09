@@ -1,6 +1,7 @@
 #include <pa/stages/particle_advector.hpp>
 
 #include <algorithm>
+#include <mutex>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/mpi.hpp>
@@ -56,6 +57,8 @@ particle_advector::particle_map particle_advector::create_neighborhood_map ()
 }
 void                            particle_advector::advect                  (      std::vector<particle>& active_particles, std::vector<particle>& inactive_particles,       particle_map& neighborhood_map)
 {
+  tbb::mutex mutex;
+
   auto& neighbors = partitioner_->neighbor_rank_info();
 
   tbb::parallel_for(std::size_t(0), active_particles.size(), std::size_t(1), [&] (const std::size_t particle_index)
@@ -78,7 +81,13 @@ void                            particle_advector::advect                  (    
         else if (particle.position[1] > maximum[1] && neighbors[3]) neighbor_rank = neighbors[3]->rank;
         else if (particle.position[2] < minimum[2] && neighbors[4]) neighbor_rank = neighbors[4]->rank;
         else if (particle.position[2] > maximum[2] && neighbors[5]) neighbor_rank = neighbors[5]->rank;
-        else    inactive_particles.push_back(particle);
+        else
+        {
+          tbb::mutex::scoped_lock lock(mutex);
+          particle.remaining_iterations = 0;
+          inactive_particles.push_back(particle);
+          break;
+        }
 
         particle_map::accessor accessor;
         if (neighborhood_map.find(accessor, neighbor_rank))
@@ -90,11 +99,12 @@ void                            particle_advector::advect                  (    
       const auto vector = vector_field_->interpolate(particle.position);
       if (vector.isZero())
       {
-        particle.remaining_iterations -= iteration_index;
+        tbb::mutex::scoped_lock lock(mutex);
+        particle.remaining_iterations = 0;
         inactive_particles.push_back(particle);
         break;
       }
-
+      
       const auto system = [&] (const vector4& x, vector4& dxdt, const float t) 
       { 
         dxdt = vector4(vector[0], vector[1], vector[2], scalar(0));
@@ -118,7 +128,8 @@ void                            particle_advector::advect                  (    
       
       if (iteration_index + 1 == particle.remaining_iterations)
       {
-        particle.remaining_iterations -= iteration_index;
+        tbb::mutex::scoped_lock lock(mutex);
+        particle.remaining_iterations = 0;
         inactive_particles.push_back(particle);
         break;
       }

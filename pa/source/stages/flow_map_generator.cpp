@@ -23,8 +23,8 @@ std::unique_ptr<vector_field> flow_map_generator::generate  (const std::size_t i
 void                          flow_map_generator::allocate  (const scalar      resolution_scale,                                               std::unique_ptr<vector_field>& flow_map)
 {
   // Create a vector field that has the size of the input vector field, scaled by resolution scale.
-  const auto base_size    = vector_field_->data.shape();
-  const auto base_spacing = vector_field_->spacing;
+  const auto base_size    = partitioner_ ->block_size();
+  const auto base_spacing = vector_field_->spacing     ;
   flow_map->data.resize(boost::extents
    [base_size   [0] * resolution_scale]
    [base_size   [1] * resolution_scale]
@@ -39,7 +39,7 @@ void                          flow_map_generator::allocate  (const scalar      r
 void                          flow_map_generator::initialize(const std::size_t iterations      ,       std::vector<particle>& particles, const std::unique_ptr<vector_field>& flow_map)
 {
   // Create particles centered at each voxel of the vector field.
-  particles = seed_generator::generate(flow_map->offset, flow_map->size, vector3(1, 1, 1), iterations, partitioner_->communicator()->rank());
+  particles = seed_generator::generate(flow_map->offset, flow_map->size, flow_map->spacing, iterations, partitioner_->communicator()->rank());
 }
 void                          flow_map_generator::assign    (                                    const std::vector<particle>& particles,       std::unique_ptr<vector_field>& flow_map)
 {
