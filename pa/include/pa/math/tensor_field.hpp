@@ -10,9 +10,6 @@ namespace pa
 {
 struct PA_EXPORT tensor_field
 {
-  void for_each     (const std::function<void(matrix3&)>& function);
-  void spectral_norm();
-
   boost::multi_array<matrix3, 3> data    {};
   vector3                        offset  {};
   vector3                        size    {};
