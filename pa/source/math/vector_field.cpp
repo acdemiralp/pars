@@ -11,7 +11,7 @@ bool    vector_field::contains   (const vector4& position) const
 {
   for (auto i = 0; i < 3; ++i)
   {
-    const auto subscript = std::floor(position[i] / spacing[i]);
+    const auto subscript = std::floor((position[i] - offset[i]) / spacing[i]);
     if (0.0 > subscript || subscript >= data.shape()[i] - 1)
       return false;
   }
@@ -23,8 +23,8 @@ vector3 vector_field::interpolate(const vector4& position) const
   vector3  weights    ;
   for (auto i = 0; i < 3; ++i)
   {
-    multi_index[i] = std::floor(position[i] / spacing[i]);
-    weights    [i] = std::fmod (position[i] , spacing[i]) / spacing[i];
+    multi_index[i] = std::floor((position[i] - offset[i]) / spacing[i]);
+    weights    [i] = std::fmod ((position[i] - offset[i]) , spacing[i]) / spacing[i];
   }
 
   const auto& c000 = data(std::array<integer, 3>{multi_index[0]    , multi_index[1]    , multi_index[2]    });

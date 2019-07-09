@@ -32,17 +32,17 @@ void run      (const std::string& address)
     settings settings;
     settings.ParseFromArray(request.data(), static_cast<std::int32_t>(request.size()));
 
-    image image = pipeline.execute(settings);
+    auto result = pipeline.execute(settings);
 
     std::string buffer;
-    image.SerializeToString(&buffer);
+    result.first.SerializeToString(&buffer);
 
     zmq::message_t response(buffer.size());
     memcpy(response.data(), buffer.data(), buffer.size());
     socket.send(response);
   }
 }
-void benchmark(const std::size_t thread_count, const std::string& settings_filepath, const bool save_image)
+void benchmark(const std::size_t thread_count, const std::string& settings_filepath)
 {
   pipeline pipeline(thread_count);
 
@@ -51,18 +51,15 @@ void benchmark(const std::size_t thread_count, const std::string& settings_filep
   const auto    settings_string = std::string(std::istreambuf_iterator<char>(settings_file), std::istreambuf_iterator<char>());
   JsonStringToMessage(settings_string, &settings, google::protobuf::util::JsonParseOptions());
 
-  auto result = pipeline.benchmark(settings);
+  auto result = pipeline.execute(settings);
 
-  const auto output_filepath = settings_filepath + 
-    ".nodes."   + std::to_string(pipeline.communicator()->size()) + 
-    ".threads." + std::to_string(thread_count);
   result.second.gather();
-  result.second.to_csv(output_filepath + ".csv");
-  std::cout << "Saved benchmark.\n";
+  result.second.to_csv(settings_filepath + ".csv");
 
-  if (save_image && pipeline.communicator()->rank() == 0)
+  if (pipeline.communicator()->rank() == 0)
   {
-    const auto filepath = output_filepath + ".png";
+    std::cout << "Saved benchmark.\n";
+    const auto filepath = settings_filepath + ".png";
     stbi_write_png(filepath.c_str(), result.first.size(0), result.first.size(1), 4, result.first.data().c_str(), result.first.size(0) * sizeof(std::uint32_t));
     std::cout << "Saved image.\n";
   }

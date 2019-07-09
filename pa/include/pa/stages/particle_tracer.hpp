@@ -56,7 +56,7 @@ public:
   void                         allocate                  (                                              std::vector<integral_curves>& integral_curves, const round_info& round_info);
   void                         initialize                (const std::vector<particle>& particles,       std::vector<integral_curves>& integral_curves, const round_info& round_info);
   void                         trace                     (const std::vector<particle>& particles,       std::vector<integral_curves>& integral_curves,       round_info& round_info);
-  void                         load_balance_collect      (                                                                                             const round_info& round_info);
+  void                         load_balance_collect      (                                                                                                   round_info& round_info);
   void                         out_of_bounds_distribute  (      std::vector<particle>& particles,                                                      const round_info& round_info);
   bool                         check_completion          (const std::vector<particle>& particles                                                                                   );
   void                         prune                     (                                              std::vector<integral_curves>& integral_curves                              );

@@ -33,22 +33,20 @@ public:
   pipeline& operator=(const pipeline&   that) = default;
   pipeline& operator=(      pipeline&&  temp) = default;
 
-  image                               execute  (const settings& settings);
-  std::pair<image, bm::mpi_session<>> benchmark(const settings& settings);
+  std::pair<image, bm::mpi_session<>> execute     (const settings& settings);
+
+  boost::mpi::communicator*           communicator();
 
 protected:
-  boost::mpi::environment                        environment_        ;
-  boost::mpi::communicator                       communicator_       ;
-                                                 
-  tbb::task_scheduler_init                       task_scheduler_init_;
-  
-  std::array<std::optional<pa::vector_field>, 7> vector_field_       ;
-  std::vector<pa::integral_curves>               streamlines_        ;
-                                                 
-  pa::partitioner                                partitioner_        ;
-  pa::data_loader                                data_loader_        ;
-  pa::particle_tracer                            particle_tracer_    ;
-  ray_tracer                                     ray_tracer_         ;
+  boost::mpi::environment  environment_        ;
+  boost::mpi::communicator communicator_       ;
+                           
+  tbb::task_scheduler_init task_scheduler_init_;
+                           
+  pa::partitioner          partitioner_        ;
+  pa::data_loader          data_loader_        ;
+  pa::particle_tracer      particle_tracer_    ;
+  ray_tracer               ray_tracer_         ;
 };
 }
 

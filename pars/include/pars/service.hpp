@@ -6,10 +6,10 @@
 
 #include <pars/export.hpp>
 
-namespace prs
+namespace pars
 {
 PARS_EXPORT void run      (const std::string& address);
-PARS_EXPORT void benchmark(const std::size_t thread_count, const std::string& settings_filepath, const bool save_image);
+PARS_EXPORT void benchmark(const std::size_t thread_count, const std::string& settings_filepath);
 }
 
 #endif
