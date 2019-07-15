@@ -41,8 +41,8 @@ def generate(benchmark):
 
 
 plot = column(
-    generate(parse.parse_benchmark_gantt("D:/root/source/cpp/in_progress/pars/build/msvc142/pars_benchmark/benchmark_sc1_n16_p24_st8_i128_lb0.json.csv")), 
-    generate(parse.parse_benchmark_gantt("D:/root/source/cpp/in_progress/pars/build/msvc142/pars_benchmark/benchmark_sc1_n16_p24_st8_i128_lb1.json.csv")))
+    generate(parse.parse_benchmark_gantt("D:/root/source/cpp/in_progress/pars/build/msvc142/pars_benchmark/benchmark_sc2_n64_p4_st32_i1024_lb0.json.csv")), 
+    generate(parse.parse_benchmark_gantt("D:/root/source/cpp/in_progress/pars/build/msvc142/pars_benchmark/benchmark_sc2_n64_p4_st32_i1024_lb1.json.csv")))
 output_file("gantt.html")
 export_png (plot, filename="gantt.png")
 show       (plot)

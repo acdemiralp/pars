@@ -60,33 +60,37 @@ def parse_benchmark_scaling          (filepath):
 
         if rank >= len(benchmark):
             benchmark.extend([{
-                "data_loader"    : 0.0, 
-                "seed_generator" : 0.0, 
-                "particle_tracer": 0.0, 
-                "index_generator": 0.0, 
-                "color_generator": 0.0, 
-                "ray_tracer"     : 0.0}] * (rank + 1 - len(benchmark)))
+                "data_loader"     : 0.0, 
+                "seed_generator"  : 0.0, 
+                "particle_tracer" : 0.0, 
+                "index_generator" : 0.0, 
+                "color_generator" : 0.0, 
+                "ray_tracer_setup": 0.0,
+                "ray_tracer_trace": 0.0}] * (rank + 1 - len(benchmark)))
                
         if re.match("1\..*", name):
-            benchmark[rank]["data_loader"    ] += value
+            benchmark[rank]["data_loader"     ] += value
         if re.match("2\..*", name):
-            benchmark[rank]["seed_generator" ] += value
+            benchmark[rank]["seed_generator"  ] += value
         if re.match("3\..*", name):
-            benchmark[rank]["particle_tracer"] += value
+            benchmark[rank]["particle_tracer" ] += value
         if re.match("4\..*", name):
-            benchmark[rank]["index_generator"] += value
+            benchmark[rank]["index_generator" ] += value
         if re.match("5\..*", name):
-            benchmark[rank]["color_generator"] += value
-        if re.match("6\..*", name):
-            benchmark[rank]["ray_tracer"     ] += value
+            benchmark[rank]["color_generator" ] += value
+        if re.match("6\..*1", name) or re.match("6\..*2", name):
+            benchmark[rank]["ray_tracer_setup"] += value
+        if re.match("6\..*3", name):
+            benchmark[rank]["ray_tracer_trace"] += value
 
     for rank in benchmark:
-        benchmark[0]["data_loader"    ] = max(benchmark[0]["data_loader"    ], rank["data_loader"    ])
-        benchmark[0]["seed_generator" ] = max(benchmark[0]["seed_generator" ], rank["seed_generator" ])
-        benchmark[0]["particle_tracer"] = max(benchmark[0]["particle_tracer"], rank["particle_tracer"])
-        benchmark[0]["index_generator"] = max(benchmark[0]["index_generator"], rank["index_generator"])
-        benchmark[0]["color_generator"] = max(benchmark[0]["color_generator"], rank["color_generator"])
-        benchmark[0]["ray_tracer"     ] = max(benchmark[0]["ray_tracer"     ], rank["ray_tracer"     ])
+        benchmark[0]["data_loader"     ] = max(benchmark[0]["data_loader"     ], rank["data_loader"     ])
+        benchmark[0]["seed_generator"  ] = max(benchmark[0]["seed_generator"  ], rank["seed_generator"  ])
+        benchmark[0]["particle_tracer" ] = max(benchmark[0]["particle_tracer" ], rank["particle_tracer" ])
+        benchmark[0]["index_generator" ] = max(benchmark[0]["index_generator" ], rank["index_generator" ])
+        benchmark[0]["color_generator" ] = max(benchmark[0]["color_generator" ], rank["color_generator" ])
+        benchmark[0]["ray_tracer_setup"] = max(benchmark[0]["ray_tracer_setup"], rank["ray_tracer_setup"])
+        benchmark[0]["ray_tracer_trace"] = max(benchmark[0]["ray_tracer_trace"], rank["ray_tracer_trace"])
 
     return benchmark[0]
 
