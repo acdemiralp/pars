@@ -36,8 +36,8 @@ public:
 
   // Advect sub-methods for separate benchmarking.
   particle_map create_neighborhood_map ();
-  void         advect                  (      std::vector<particle>& active_particles, std::vector<particle>& inactive_particles,       particle_map& neighborhood_map);
-  void         out_of_bounds_distribute(      std::vector<particle>& active_particles,                                            const particle_map& neighborhood_map);
+  void         advect                  (      std::vector<particle>& active_particles, std::vector<std::vector<particle>>& inactive_particles,       particle_map& neighborhood_map);
+  void         out_of_bounds_distribute(      std::vector<particle>& active_particles,                                                         const particle_map& neighborhood_map);
   bool         check_completion        (const std::vector<particle>& active_particles);
 
 protected:

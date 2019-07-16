@@ -34,7 +34,7 @@ void                            particle_advector::set_step_size           (cons
 
 void                            particle_advector::advect                  (std::vector<particle>&    particles   )
 {
-  std::vector<particle> inactive_particles;
+  std::vector<std::vector<particle>> inactive_particles(partitioner_->communicator()->size());
 
   while (!check_completion(particles))
   {
@@ -43,9 +43,11 @@ void                            particle_advector::advect                  (std:
     if (partitioner_->communicator()->rank() == 0) std::cout << "2.1.2.2::particle_advector::out_of_bounds_distribute\n"; out_of_bounds_distribute(particles,                     neighborhood_map);
   }
 
-  if   (partitioner_->communicator()->rank() == 0) std::cout << "2.1.2.3::particle_advector::gather_particles\n"        ;
-  boost::mpi::all_gather(*partitioner_->communicator(), inactive_particles.data(), inactive_particles.size(), particles);
-  particles.erase(std::remove_if(particles.begin(), particles.end(), [&] (const particle& particle) { return particle.original_rank != partitioner_->communicator()->rank(); }), particles.end());
+  if   (partitioner_->communicator()->rank() == 0) std::cout << "2.1.2.3::particle_advector::gather_particles\n";
+  std::vector<std::vector<particle>> gathered_particles(partitioner_->communicator()->size());
+  boost::mpi::all_to_all(*partitioner_->communicator(), inactive_particles, gathered_particles);
+  for (auto& particles_vector : gathered_particles)
+    particles.insert(particles.end(), particles_vector.begin(), particles_vector.end());
 }
 
 particle_advector::particle_map particle_advector::create_neighborhood_map ()
@@ -56,7 +58,7 @@ particle_advector::particle_map particle_advector::create_neighborhood_map ()
       neighborhood_map.emplace(neighbor->rank, std::vector<particle>());
   return neighborhood_map;
 }
-void                            particle_advector::advect                  (      std::vector<particle>& active_particles, std::vector<particle>& inactive_particles,       particle_map& neighborhood_map)
+void                            particle_advector::advect                  (      std::vector<particle>& active_particles, std::vector<std::vector<particle>>& inactive_particles,       particle_map& neighborhood_map)
 {
   tbb::mutex mutex;
 
@@ -86,7 +88,7 @@ void                            particle_advector::advect                  (    
         {
           tbb::mutex::scoped_lock lock(mutex);
           particle.remaining_iterations = 0;
-          inactive_particles.push_back(particle);
+          inactive_particles[particle.original_rank].push_back(particle);
           break;
         }
 
@@ -102,7 +104,7 @@ void                            particle_advector::advect                  (    
       {
         tbb::mutex::scoped_lock lock(mutex);
         particle.remaining_iterations = 0;
-        inactive_particles.push_back(particle);
+        inactive_particles[particle.original_rank].push_back(particle);
         break;
       }
       
@@ -131,13 +133,13 @@ void                            particle_advector::advect                  (    
       {
         tbb::mutex::scoped_lock lock(mutex);
         particle.remaining_iterations = 0;
-        inactive_particles.push_back(particle);
+        inactive_particles[particle.original_rank].push_back(particle);
         break;
       }
     }
   });
 }
-void                            particle_advector::out_of_bounds_distribute(      std::vector<particle>& active_particles,                                            const particle_map& neighborhood_map)
+void                            particle_advector::out_of_bounds_distribute(      std::vector<particle>& active_particles,                                                         const particle_map& neighborhood_map)
 {
   active_particles.clear();
 
