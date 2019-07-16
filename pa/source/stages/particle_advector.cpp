@@ -34,15 +34,16 @@ void                            particle_advector::set_step_size           (cons
 
 void                            particle_advector::advect                  (std::vector<particle>&    particles   )
 {
-  std::vector<particle> inactive_particles(partitioner_->communicator()->size());
+  std::vector<particle> inactive_particles;
 
   while (!check_completion(particles))
   {
-    auto neighborhood_map = create_neighborhood_map();
-    advect                  (particles, inactive_particles, neighborhood_map);
-    out_of_bounds_distribute(particles,                     neighborhood_map);
+    if (partitioner_->communicator()->rank() == 0) std::cout << "2.1.2.0::particle_advector::create_neighborhood_map\n" ; auto neighborhood_map = create_neighborhood_map();
+    if (partitioner_->communicator()->rank() == 0) std::cout << "2.1.2.1::particle_advector::advect\n"                  ; advect                  (particles, inactive_particles, neighborhood_map);
+    if (partitioner_->communicator()->rank() == 0) std::cout << "2.1.2.2::particle_advector::out_of_bounds_distribute\n"; out_of_bounds_distribute(particles,                     neighborhood_map);
   }
 
+  if   (partitioner_->communicator()->rank() == 0) std::cout << "2.1.2.3::particle_advector::gather_particles\n"        ;
   boost::mpi::all_gather(*partitioner_->communicator(), inactive_particles.data(), inactive_particles.size(), particles);
   particles.erase(std::remove_if(particles.begin(), particles.end(), [&] (const particle& particle) { return particle.original_rank != partitioner_->communicator()->rank(); }), particles.end());
 }

@@ -13,10 +13,10 @@ std::unique_ptr<vector_field> flow_map_generator::generate  (const std::size_t i
 {
   auto particles = std::vector     <particle>    ();
   auto flow_map  = std::make_unique<vector_field>();
-  allocate  (resolution_scale,            flow_map);
-  initialize(iterations      , particles, flow_map);
-  advect    (                  particles          );
-  assign    (                  particles, flow_map);
+  if (partitioner_->communicator()->rank() == 0) std::cout << "2.1.0::flow_map_generator::allocate\n"  ; allocate  (resolution_scale,            flow_map);
+  if (partitioner_->communicator()->rank() == 0) std::cout << "2.1.1::flow_map_generator::initialize\n"; initialize(iterations      , particles, flow_map);
+  if (partitioner_->communicator()->rank() == 0) std::cout << "2.1.2::flow_map_generator::advect\n"    ; advect    (                  particles          );
+  if (partitioner_->communicator()->rank() == 0) std::cout << "2.1.3::flow_map_generator::assign\n"    ; assign    (                  particles, flow_map);
   return flow_map;
 }
 
