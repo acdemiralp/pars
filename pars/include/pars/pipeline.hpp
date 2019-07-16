@@ -9,6 +9,7 @@
 #include <boost/mpi/cartesian_communicator.hpp>
 #include <boost/mpi.hpp>
 #include <pa/math/integral_curves.hpp>
+#include <pa/math/scalar_field.hpp>
 #include <pa/math/vector_field.hpp>
 #include <pa/stages/partitioner.hpp>
 #include <pa/stages/data_loader.hpp>
@@ -34,7 +35,8 @@ public:
   pipeline& operator=(      pipeline&&  temp) = default;
 
   std::pair<image, bm::mpi_session<>> execute     (const settings& settings);
-
+                   bm::mpi_session<>  execute_ftle(const settings& settings);
+  
   boost::mpi::communicator*           communicator();
 
 protected:

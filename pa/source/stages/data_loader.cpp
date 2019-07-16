@@ -14,30 +14,39 @@ data_loader::data_loader(partitioner* partitioner) : partitioner_(partitioner)
 
 }
 
-void                                       data_loader::set_file       (const std::string& filepath )
+void                                       data_loader::set_file                   (const std::string& filepath )
 {
 #ifdef H5_HAVE_PARALLEL
-  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadOnly, HighFive::MPIOFileDriver(*partitioner_->communicator(), MPI_INFO_NULL));
+  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadWrite, HighFive::MPIOFileDriver(*partitioner_->communicator(), MPI_INFO_NULL));
 #else
-  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadOnly);
+  file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadWrite);
 #endif
 }
 
-ivector3                                   data_loader::load_dimensions()
+ivector3                                   data_loader::load_dimensions            ()
 {
   auto dimensions = file_->getDataSet("vectors").getDimensions();
   return ivector3(dimensions[0], dimensions[1], dimensions[2]);
 }
-std::optional<vector_field>                data_loader::load_local     ()
+std::optional<scalar_field>                data_loader::load_local_scalar_field    (const std::string& name     )
+{
+  std::optional<scalar_field> scalar_field;
+
+  scalar_field.emplace();
+  load_scalar_field(name, partitioner_->local_rank_info().value(), scalar_field);
+
+  return scalar_field;
+}
+std::optional<vector_field>                data_loader::load_local_vector_field    ()
 {
   std::optional<vector_field> vector_field;
 
   vector_field.emplace();
-  load(partitioner_->local_rank_info().value(), vector_field);
+  load_vector_field(partitioner_->local_rank_info().value(), vector_field);
 
   return vector_field;
 }
-std::array<std::optional<vector_field>, 6> data_loader::load_neighbors ()
+std::array<std::optional<vector_field>, 6> data_loader::load_neighbor_vector_fields()
 {
   std::array<std::optional<vector_field>, 6> vector_fields;
 
@@ -48,13 +57,28 @@ std::array<std::optional<vector_field>, 6> data_loader::load_neighbors ()
       continue;
 
     vector_fields[i].emplace();
-    load(neighbor_rank_info[i].value(), vector_fields[i]);
+    load_vector_field(neighbor_rank_info[i].value(), vector_fields[i]);
   }
 
   return vector_fields;
 }
 
-void                                       data_loader::load           (const partitioner::rank_info& rank_info, std::optional<vector_field>& vector_field)
+void                                       data_loader::load_scalar_field          (const std::string& name, const partitioner::rank_info& rank_info, std::optional<scalar_field>& scalar_field)
+{
+  file_->getDataSet(name).select(
+    {std::size_t(rank_info.offset            [0]), std::size_t(rank_info.offset            [1]), std::size_t(rank_info.offset            [2])},
+    {std::size_t(rank_info.ghosted_block_size[0]), std::size_t(rank_info.ghosted_block_size[1]), std::size_t(rank_info.ghosted_block_size[2])},
+    {1, 1, 1}).read(scalar_field->data);
+  
+  std::array<scalar, 3> raw_spacing;
+  file_->getAttribute("spacing").read(raw_spacing);
+  scalar_field->spacing  = vector3(raw_spacing[0], raw_spacing[1], raw_spacing[2]);
+  scalar_field->spacing /= scalar_field->spacing.maxCoeff(); // Divide by maximum so that the maximum is 1.
+
+  scalar_field->offset = rank_info.offset          .cast<float>().array() * scalar_field->spacing.array();
+  scalar_field->size   = partitioner_->block_size().cast<float>().array() * scalar_field->spacing.array();
+}
+void                                       data_loader::load_vector_field          (                         const partitioner::rank_info& rank_info, std::optional<vector_field>& vector_field)
 {
   boost::multi_array<scalar, 4> data;
   file_->getDataSet("vectors").select(
@@ -78,5 +102,20 @@ void                                       data_loader::load           (const pa
 
   vector_field->offset = rank_info.offset          .cast<float>().array() * vector_field->spacing.array();
   vector_field->size   = partitioner_->block_size().cast<float>().array() * vector_field->spacing.array();
+}
+  
+void                                       data_loader::save_ftle_field            (const std::string& name, scalar_field* ftle_field)
+{
+  if (file_->exist("ftle"))
+  {
+    auto dataset = file_->getDataSet(name);
+    dataset.resize({ftle_field->data.shape()[0], ftle_field->data.shape()[1], ftle_field->data.shape()[2]});
+    dataset.write (ftle_field->data);
+  }
+  else
+  {
+    auto dataset = file_->createDataSet<float>(name, HighFive::DataSpace::From(ftle_field->data));
+    dataset.write (ftle_field->data);
+  }
 }
 }

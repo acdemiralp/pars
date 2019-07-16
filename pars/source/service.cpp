@@ -51,17 +51,31 @@ void benchmark(const std::size_t thread_count, const std::string& settings_filep
   const auto    settings_string = std::string(std::istreambuf_iterator<char>(settings_file), std::istreambuf_iterator<char>());
   JsonStringToMessage(settings_string, &settings, google::protobuf::util::JsonParseOptions());
 
-  auto result = pipeline.execute(settings);
-
-  result.second.gather();
-  result.second.to_csv(settings_filepath + ".csv");
-
-  if (pipeline.communicator()->rank() == 0)
+  auto ftle_mode = settings.mode().find("ftle") != std::string::npos;
+  if (ftle_mode)
   {
-    std::cout << "Saved benchmark.\n";
-    const auto filepath = settings_filepath + ".png";
-    stbi_write_png(filepath.c_str(), result.first.size(0), result.first.size(1), 4, result.first.data().c_str(), result.first.size(0) * sizeof(std::uint32_t));
-    std::cout << "Saved image.\n";
+    auto result = pipeline.execute_ftle(settings);
+
+    result.gather();
+    result.to_csv(settings_filepath + ".csv");
+
+    if (pipeline.communicator()->rank() == 0)
+      std::cout << "Saved benchmark.\n";
+  }
+  else
+  {
+    auto result = pipeline.execute     (settings);
+
+    result.second.gather();
+    result.second.to_csv(settings_filepath + ".csv");
+
+    if (pipeline.communicator()->rank() == 0)
+    {
+      std::cout << "Saved benchmark.\n";
+      const auto filepath = settings_filepath + ".png";
+      stbi_write_png(filepath.c_str(), result.first.size(0), result.first.size(1), 4, result.first.data().c_str(), result.first.size(0) * sizeof(std::uint32_t));
+      std::cout << "Saved image.\n";
+    }
   }
 }
 }

@@ -78,9 +78,9 @@ def parse_benchmark_scaling          (filepath):
             benchmark[rank]["index_generator" ] += value
         if re.match("5\..*", name):
             benchmark[rank]["color_generator" ] += value
-        if re.match("6\..*1", name) or re.match("6\..*2", name):
+        if re.match("6\..*1", name) or re.match("6\..*2", name) or re.match("6\..*3", name):
             benchmark[rank]["ray_tracer_setup"] += value
-        if re.match("6\..*3", name):
+        if re.match("6\..*4", name):
             benchmark[rank]["ray_tracer_trace"] += value
 
     for rank in benchmark:
