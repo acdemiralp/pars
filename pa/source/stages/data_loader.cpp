@@ -106,16 +106,21 @@ void                                       data_loader::load_vector_field       
   
 void                                       data_loader::save_ftle_field            (const std::string& name, scalar_field* ftle_field)
 {
+  auto& rank_info  = partitioner_->local_rank_info();
+  auto  offset     = rank_info->offset;
+  auto  size       = ftle_field->data.shape();
+  auto  total_size = partitioner_->domain_size();
+
   if (file_->exist(name))
   {
     auto dataset = file_->getDataSet(name);
-    dataset.resize({partitioner_->domain_size()[0], partitioner_->domain_size()[1], partitioner_->domain_size()[2]});
-    dataset.write (ftle_field->data);
+    dataset.resize({total_size[0], total_size[1], total_size[2]});
+    dataset.select({offset[0], offset[1], offset[2]}, {size[0], size[1], size[2]}, {1, 1, 1}).write(ftle_field->data);
   }
   else
   {
-    auto dataset = file_->createDataSet<float>(name, HighFive::DataSpace({partitioner_->domain_size()[0], partitioner_->domain_size()[1], partitioner_->domain_size()[2]}));
-    dataset.write (ftle_field->data);
+    auto dataset = file_->createDataSet<float>(name, HighFive::DataSpace({total_size[0], total_size[1], total_size[2]}));
+    dataset.select({offset[0], offset[1], offset[2]}, {size[0], size[1], size[2]}, {1, 1, 1}).write(ftle_field->data);
   }
 }
 }
