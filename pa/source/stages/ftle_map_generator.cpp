@@ -43,7 +43,7 @@ std::unique_ptr<scalar_field> ftle_map_generator::generate    ()
       Eigen::SelfAdjointEigenSolver<matrix3> solver(spectral_norm);
 
       // Compute FTLE.
-      ftle_map->data[x][y][z] = std::log(std::sqrt(solver.eigenvalues().maxCoeff())) / time_;
+      ftle_map->data[x][y][z] = std::log(std::sqrt(solver.eigenvalues().maxCoeff())) / std::abs(time_);
   }}}});
 
   return ftle_map;
