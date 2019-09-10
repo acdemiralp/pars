@@ -114,13 +114,18 @@ void                                       data_loader::save_ftle_field         
   if (file_->exist(name))
   {
     auto dataset = file_->getDataSet(name);
-    dataset.resize({total_size[0], total_size[1], total_size[2]});
-    dataset.select({offset[0], offset[1], offset[2]}, {size[0], size[1], size[2]}, {1, 1, 1}).write(ftle_field->data);
+    dataset.resize({std::size_t(total_size[0]), std::size_t(total_size[1]), std::size_t(total_size[2])});
+    dataset.select({std::size_t(offset    [0]), std::size_t(offset    [1]), std::size_t(offset    [2])}, 
+                   {std::size_t(size      [0]), std::size_t(size      [1]), std::size_t(size      [2])}, 
+                   {1, 1, 1}).write(ftle_field->data);
   }
   else
   {
-    auto dataset = file_->createDataSet<float>(name, HighFive::DataSpace({total_size[0], total_size[1], total_size[2]}));
-    dataset.select({offset[0], offset[1], offset[2]}, {size[0], size[1], size[2]}, {1, 1, 1}).write(ftle_field->data);
+    auto dataset = file_->createDataSet<float>(name, HighFive::DataSpace(
+                   {std::size_t(total_size[0]), std::size_t(total_size[1]), std::size_t(total_size[2])}));
+    dataset.select({std::size_t(offset    [0]), std::size_t(offset    [1]), std::size_t(offset    [2])}, 
+                   {std::size_t(size      [0]), std::size_t(size      [1]), std::size_t(size      [2])}, 
+                   {1, 1, 1}).write(ftle_field->data);
   }
 }
 }
