@@ -40,20 +40,31 @@ void run      (const std::string& address)
 
   while (true)
   {
-    zmq::message_t request;
-    socket.recv  (&request);
+    std::string request_string;
+
+    if (pipeline.communicator()->rank() == 0)
+    {
+      zmq::message_t request;
+      socket.recv  (&request);
+      request_string = std::string(static_cast<char*>(request.data()), request.size());
+    }
+
+    boost::mpi::broadcast(*pipeline.communicator(), request_string, 0);
 
     settings settings;
-    settings.ParseFromArray(request.data(), static_cast<std::int32_t>(request.size()));
+    settings.ParseFromString(request_string);
 
     auto result = pipeline.execute(settings);
 
-    std::string buffer;
-    result.first.SerializeToString(&buffer);
+    if (pipeline.communicator()->rank() == 0)
+    {
+      std::string buffer;
+      result.first.SerializeToString(&buffer);
 
-    zmq::message_t response(buffer.size());
-    memcpy(response.data(), buffer.data(), buffer.size());
-    socket.send(response);
+      zmq::message_t response(buffer.size());
+      memcpy(response.data(), buffer.data(), buffer.size());
+      socket.send(response);
+    }
   }
 }
 void benchmark(const std::size_t thread_count, const std::string& settings_filepath)
