@@ -121,6 +121,9 @@ void viewer::update_parameters                ()
 
   QPixmap pixmap;
   pixmap.convertFromImage(QImage(reinterpret_cast<const unsigned char*>(image.data().c_str()), image.size()[0], image.size()[1], QImage::Format_RGBA8888));
+  QMatrix rotation_matrix;
+  rotation_matrix.rotate(180);
+  pixmap = pixmap.transformed(rotation_matrix);
 
   label_image->setPixmap(pixmap);
 
