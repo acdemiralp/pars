@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 
+#include <boost/asio.hpp>
 #include <google/protobuf/util/json_util.h>
 #include <cppzmq/zmq.hpp>
 #include <stb/stb_image_write.h>
@@ -19,10 +20,23 @@ namespace pars
 void run      (const std::string& address)
 {
   pipeline pipeline;
-
+  
   zmq::context_t context(1);
   zmq::socket_t  socket (context, ZMQ_PAIR);
-  socket.bind(address);
+  if (pipeline.communicator()->rank() == 0)
+  {
+    boost::asio::io_service        io_service;
+    boost::asio::ip::tcp::resolver resolver(io_service);
+    std::string                    host_name = boost::asio::ip::host_name();
+    std::cout << "Host name is " << host_name << ".\n";
+    std::cout << "IP addresses are: \n";
+    std::for_each(resolver.resolve({host_name, ""}), {}, [ ] (const auto& re) 
+    {
+      std::cout << re.endpoint().address() << '\n';
+    });
+
+    socket.bind(address);
+  }
 
   while (true)
   {
