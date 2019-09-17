@@ -40,15 +40,22 @@ public:
   boost::mpi::communicator*           communicator();
 
 protected:
-  boost::mpi::environment  environment_        ;
-  boost::mpi::communicator communicator_       ;
-                           
-  tbb::task_scheduler_init task_scheduler_init_;
-                           
-  pa::partitioner          partitioner_        ;
-  pa::data_loader          data_loader_        ;
-  pa::particle_tracer      particle_tracer_    ;
-  ray_tracer               ray_tracer_         ;
+  boost::mpi::environment                        environment_           ;
+  boost::mpi::communicator                       communicator_          ;
+                                                                        
+  tbb::task_scheduler_init                       task_scheduler_init_   ;
+                                                                        
+  pa::partitioner                                partitioner_           ;
+  pa::data_loader                                data_loader_           ;
+  pa::particle_tracer                            particle_tracer_       ;
+  ray_tracer                                     ray_tracer_            ;
+
+  std::optional<settings>                        last_settings_         ;
+  std::optional<pa::scalar_field>                local_scalar_field_    ;
+  std::optional<pa::vector_field>                local_vector_field_    ;
+  std::array<std::optional<pa::vector_field>, 6> neighbor_vector_fields_;
+  std::vector<pa::particle>                      seeds_                 ;
+  std::vector<pa::integral_curves>               integral_curves_       ;
 };
 }
 
