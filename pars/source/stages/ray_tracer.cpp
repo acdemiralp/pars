@@ -27,7 +27,7 @@ ray_tracer::ray_tracer (pa::partitioner* partitioner, const std::size_t thread_c
   device.setCurrent();
 
   auto material = ospray::cpp::Material("scivis", "OBJMaterial");
-  material.set   ("Ks", 0.7F, 0.7F, 0.7F);
+  material.set   ("Ks", 0.5F, 0.5F, 0.5F);
   material.set   ("Ns", 10.0F);
   material.commit();
   
@@ -66,19 +66,27 @@ ray_tracer::ray_tracer (pa::partitioner* partitioner, const std::size_t thread_c
   camera_->commit();
   
   auto ambient_light = ospray::cpp::Light("ambient");
-  ambient_light.set   ("intensity", 0.5F);
+  ambient_light.set   ("intensity", 1.0F);
   ambient_light.commit();
   const auto ambient_handle = ambient_light.handle();
   
   auto distant_light = ospray::cpp::Light("distant");
   distant_light.set   ("direction"      , 1.0F, 1.0F, -0.5F);
   distant_light.set   ("color"          , 1.0F, 1.0F,  0.8F);
-  distant_light.set   ("intensity"      , 1.5F);
-  distant_light.set   ("angularDiameter", 1.0F);
+  distant_light.set   ("intensity"      , 1.0F);
+  distant_light.set   ("angularDiameter", 0.5F);
   distant_light.commit();
   const auto distant_handle = distant_light.handle();
   
-  std::vector<OSPLight> lights_list = {ambient_handle, distant_handle};
+  auto distant_light2 = ospray::cpp::Light("distant");
+  distant_light2.set   ("direction"      , -1.0F, 0.0F, 0.5F);
+  distant_light2.set   ("color"          , 1.0F, 1.0F,  0.8F);
+  distant_light2.set   ("intensity"      , 1.0F);
+  distant_light2.set   ("angularDiameter", 0.5F);
+  distant_light2.commit();
+  const auto distant_handle_2 = distant_light2.handle();
+  
+  std::vector<OSPLight> lights_list = {ambient_handle, distant_handle, distant_handle_2};
   lights_ = std::make_unique<ospray::cpp::Data>(lights_list.size(), OSP_LIGHT, lights_list.data());
   lights_->commit();
   
