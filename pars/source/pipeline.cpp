@@ -393,7 +393,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     if (communicator_.rank() == 0) std::cout << "4.0::data_loader::save_ftle_map\n";
     recorder.record("4.0::data_loader::save_ftle_map"          , [&] ()
     {
-      data_loader_.save_ftle_field("ftle", ftle_map.get());
+      data_loader_.save_ftle_field(std::string("ftle_") + (settings.particle_tracing_step_size() > 0.0 ? "forward" : "backward"), ftle_map.get());
     });
   });
 
