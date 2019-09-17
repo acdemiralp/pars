@@ -15,22 +15,156 @@
   </property>
   <widget class="QWidget" name="central_widget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="0">
-     <layout class="QHBoxLayout" name="layout_bottom" stretch="4,1">
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="layout_top">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <property name="sizeConstraint">
+       <enum>QLayout::SetFixedSize</enum>
+      </property>
       <item>
-       <widget class="QLabel" name="label_image">
-        <property name="autoFillBackground">
-         <bool>false</bool>
+       <widget class="QLabel" name="label_ip">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-        <property name="styleSheet">
-         <string notr="true">background-color : black</string>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>24</height>
+         </size>
+        </property>
+        <property name="baseSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
         </property>
         <property name="text">
-         <string/>
+         <string>IP:</string>
         </property>
        </widget>
       </item>
       <item>
+       <widget class="QLineEdit" name="text_ip">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_port">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>24</height>
+         </size>
+        </property>
+        <property name="baseSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Port:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="text_port">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_connect">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>24</height>
+         </size>
+        </property>
+        <property name="baseSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Connect</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="spacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Expanding</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>200</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0">
+     <widget class="QSplitter" name="splitter">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QLabel" name="label_image">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>8</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color : black</string>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::Box</enum>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="layout_right">
         <property name="spacing">
          <number>0</number>
@@ -38,19 +172,34 @@
         <item>
          <widget class="QToolBox" name="toolbox">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>1</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>4</number>
           </property>
           <widget class="QWidget" name="page_dataset">
            <property name="geometry">
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>266</width>
-             <height>557</height>
+             <width>263</width>
+             <height>559</height>
             </rect>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
            <attribute name="label">
             <string>Dataset Settings</string>
@@ -72,7 +221,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>D:\root\data\pli\msa\MSA0309_s0536-0695_c_s05.h5</string>
+               <string>/hpcwork/ad784563/data/pli/msa/MSA0309_s0536-0695_c.h5</string>
               </property>
              </widget>
             </item>
@@ -96,9 +245,15 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>266</width>
-             <height>557</height>
+             <width>263</width>
+             <height>559</height>
             </rect>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
            <attribute name="label">
             <string>Volume Rendering Settings</string>
@@ -174,9 +329,15 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>271</width>
-             <height>540</height>
+             <width>468</width>
+             <height>559</height>
             </rect>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
            <attribute name="label">
             <string>Particle Advection Settings</string>
@@ -390,9 +551,15 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>266</width>
-             <height>557</height>
+             <width>263</width>
+             <height>559</height>
             </rect>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
            <attribute name="label">
             <string>Color Mapping</string>
@@ -407,6 +574,9 @@
             </item>
             <item row="0" column="1">
              <widget class="QComboBox" name="combobox_mode">
+              <property name="currentIndex">
+               <number>2</number>
+              </property>
               <item>
                <property name="text">
                 <string>hsl_constant_s</string>
@@ -450,7 +620,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>0.5</string>
+               <string>0.75</string>
               </property>
              </widget>
             </item>
@@ -474,9 +644,15 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>266</width>
-             <height>557</height>
+             <width>468</width>
+             <height>559</height>
             </rect>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
            <attribute name="label">
             <string>Ray Tracing Settings</string>
@@ -668,123 +844,8 @@
          </widget>
         </item>
        </layout>
-      </item>
-     </layout>
-    </item>
-    <item row="0" column="0">
-     <layout class="QHBoxLayout" name="layout_top">
-      <property name="spacing">
-       <number>6</number>
-      </property>
-      <property name="sizeConstraint">
-       <enum>QLayout::SetFixedSize</enum>
-      </property>
-      <item>
-       <widget class="QLabel" name="label_ip">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>24</height>
-         </size>
-        </property>
-        <property name="baseSize">
-         <size>
-          <width>0</width>
-          <height>24</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>IP:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="text_ip">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="label_port">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>24</height>
-         </size>
-        </property>
-        <property name="baseSize">
-         <size>
-          <width>0</width>
-          <height>24</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Port:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="text_port">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="button_connect">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>24</height>
-         </size>
-        </property>
-        <property name="baseSize">
-         <size>
-          <width>0</width>
-          <height>24</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Connect</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="spacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Expanding</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>200</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -802,6 +863,36 @@
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>text_ip</tabstop>
+  <tabstop>text_port</tabstop>
+  <tabstop>button_connect</tabstop>
+  <tabstop>text_filepath</tabstop>
+  <tabstop>checkbox_volume_rendering_enabled</tabstop>
+  <tabstop>combobox_scalars</tabstop>
+  <tabstop>checkbox_particle_advection_enabled</tabstop>
+  <tabstop>checkbox_load_balancing_enabled</tabstop>
+  <tabstop>combobox_integrator</tabstop>
+  <tabstop>text_step_size</tabstop>
+  <tabstop>text_particle_advection_iterations</tabstop>
+  <tabstop>text_stride_x</tabstop>
+  <tabstop>text_stride_y</tabstop>
+  <tabstop>text_stride_z</tabstop>
+  <tabstop>text_line_radius</tabstop>
+  <tabstop>combobox_mode</tabstop>
+  <tabstop>text_parameter</tabstop>
+  <tabstop>text_position_x</tabstop>
+  <tabstop>text_position_y</tabstop>
+  <tabstop>text_position_z</tabstop>
+  <tabstop>text_forward_x</tabstop>
+  <tabstop>text_forward_y</tabstop>
+  <tabstop>text_forward_z</tabstop>
+  <tabstop>text_up_x</tabstop>
+  <tabstop>text_up_y</tabstop>
+  <tabstop>text_up_z</tabstop>
+  <tabstop>text_ray_tracing_iterations</tabstop>
+  <tabstop>button_update</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
