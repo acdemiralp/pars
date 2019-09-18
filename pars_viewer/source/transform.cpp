@@ -6,8 +6,8 @@ namespace detail
 {
 Eigen::Matrix3f look_at(const Eigen::Vector3f& eye, const Eigen::Vector3f& forward, const Eigen::Vector3f& up)
 {
-  Eigen::Vector3f right   = forward.normalized().cross(up.normalized()).normalized();
-  Eigen::Vector3f true_up = right.cross(forward);
+  Eigen::Vector3f right   = up.normalized().cross(forward.normalized()).normalized();
+  Eigen::Vector3f true_up = forward.normalized().cross(right);
   Eigen::Matrix3f matrix;
   matrix << 
    right  .x(), right  .y(), right  .z(),
@@ -18,12 +18,9 @@ Eigen::Matrix3f look_at(const Eigen::Vector3f& eye, const Eigen::Vector3f& forwa
 }
 
 transform::transform() 
-: translation_(0.0f, 0.0f, 0.0f)
-, rotation_   (
-  Eigen::AngleAxisf(0, Eigen::Vector3f::UnitX())*
-  Eigen::AngleAxisf(0, Eigen::Vector3f::UnitY())*
-  Eigen::AngleAxisf(0, Eigen::Vector3f::UnitZ()))
-, scale_      (1.0f, 1.0f, 1.0f)
+: translation_(Eigen::Vector3f   ::Zero    ())
+, rotation_   (Eigen::Quaternionf::Identity())
+, scale_      (Eigen::Vector3f   ::Ones    ())
 {
 
 }
@@ -38,7 +35,7 @@ Eigen::Quaternionf transform::rotation          () const
 }
 Eigen::Vector3f    transform::rotation_euler    () const
 {
-  return rotation_.toRotationMatrix().eulerAngles(0, 1, 2);
+  return rotation_.toRotationMatrix().eulerAngles(2, 0, 1);
 }
 Eigen::Vector3f    transform::scale             () const
 {
@@ -47,15 +44,15 @@ Eigen::Vector3f    transform::scale             () const
          
 Eigen::Vector3f    transform::right             () const
 {
-  return rotation()._transformVector(Eigen::Vector3f(1.0f, 0.0f, 0.0f));
+  return rotation()._transformVector(Eigen::Vector3f::UnitX());
 }
 Eigen::Vector3f    transform::up                () const
 {
-  return rotation()._transformVector(Eigen::Vector3f(0.0f, 1.0f, 0.0f));
+  return rotation()._transformVector(Eigen::Vector3f::UnitY());
 }
 Eigen::Vector3f    transform::forward           () const
 {
-  return rotation()._transformVector(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
+  return rotation()._transformVector(Eigen::Vector3f::UnitZ());
 }
           
 void               transform::set_translation   (const Eigen::Vector3f   & translation                      )
@@ -69,9 +66,9 @@ void               transform::set_rotation      (const Eigen::Quaternionf& rotat
 void               transform::set_rotation_euler(const Eigen::Vector3f   & rotation                         )
 {
   set_rotation(
+    Eigen::AngleAxisf(rotation[2], Eigen::Vector3f::UnitZ()) *
     Eigen::AngleAxisf(rotation[0], Eigen::Vector3f::UnitX()) *
-    Eigen::AngleAxisf(rotation[1], Eigen::Vector3f::UnitY()) *
-    Eigen::AngleAxisf(rotation[2], Eigen::Vector3f::UnitZ()));
+    Eigen::AngleAxisf(rotation[1], Eigen::Vector3f::UnitY()));
 }
 void               transform::set_scale         (const Eigen::Vector3f   & scale                            )
 {
@@ -89,22 +86,22 @@ void               transform::rotate            (const Eigen::Quaternionf& value
 void               transform::rotate_euler      (const Eigen::Vector3f   & value                            , const bool postmultiply)
 {
   rotate(
+    Eigen::AngleAxisf(value[2], Eigen::Vector3f::UnitZ()) *
     Eigen::AngleAxisf(value[0], Eigen::Vector3f::UnitX()) *
-    Eigen::AngleAxisf(value[1], Eigen::Vector3f::UnitY()) *
-    Eigen::AngleAxisf(value[2], Eigen::Vector3f::UnitZ()), postmultiply);
+    Eigen::AngleAxisf(value[1], Eigen::Vector3f::UnitY()), postmultiply);
 }
 void               transform::scale             (const Eigen::Vector3f   & value                            )
 {
   set_scale      (value.array() * scale().array());
 }
-void               transform::look_at           (const Eigen::Vector3f   & target, const Eigen::Vector3f& up)
+void               transform::look_at           (const Eigen::Vector3f   & forward, const Eigen::Vector3f& up)
 {
-  set_rotation(Eigen::Quaternionf(detail::look_at(translation(), target, up)));
+  set_rotation   (Eigen::Quaternionf(detail::look_at(translation(), forward, up)));
 }
 void               transform::reset             ()
 {
-  translation_ = Eigen::Vector3f   (0.0f, 0.0f, 0.0f);
-  rotation_    = Eigen::Quaternionf(1.0f, 0.0f, 0.0f, 0.0f).derived();
-  scale_       = Eigen::Vector3f   (1.0f, 1.0f, 1.0f);
+  translation_ = Eigen::Vector3f   ::Zero    ();
+  rotation_    = Eigen::Quaternionf::Identity();
+  scale_       = Eigen::Vector3f   ::Ones    ();
 }
 }

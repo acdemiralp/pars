@@ -34,7 +34,7 @@ public:
   void               rotate            (const Eigen::Quaternionf& value      , const bool postmultiply = false);
   void               rotate_euler      (const Eigen::Vector3f   & value      , const bool postmultiply = false);
   void               scale             (const Eigen::Vector3f   & value      );
-  void               look_at           (const Eigen::Vector3f   & target     , const Eigen::Vector3f& up = Eigen::Vector3f(0.0f, 1.0f, 0.0f));
+  void               look_at           (const Eigen::Vector3f   & forward    , const Eigen::Vector3f& up = Eigen::Vector3f(0.0f, 1.0f, 0.0f));
   void               reset             ();
             
 protected: 

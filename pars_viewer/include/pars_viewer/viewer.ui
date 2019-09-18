@@ -146,8 +146,8 @@
       </property>
       <widget class="QLabel" name="label_image">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-         <horstretch>8</horstretch>
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>4</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
@@ -168,7 +168,7 @@
        </property>
       </widget>
       <widget class="QWidget" name="layoutWidget">
-       <layout class="QVBoxLayout" name="layout_right">
+       <layout class="QVBoxLayout" name="layout_right" stretch="1,0,0">
         <property name="spacing">
          <number>0</number>
         </property>
@@ -178,7 +178,7 @@
            <bool>false</bool>
           </property>
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
             <horstretch>1</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -670,7 +670,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>500.0</string>
+               <string>0.0</string>
               </property>
              </widget>
             </item>
@@ -703,7 +703,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>750.0</string>
+               <string>0.0</string>
               </property>
              </widget>
             </item>
@@ -769,7 +769,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>1.0</string>
+               <string>-1.0</string>
               </property>
              </widget>
             </item>
@@ -782,7 +782,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>-1250.0</string>
+               <string>-1000.0</string>
               </property>
              </widget>
             </item>
@@ -841,6 +841,12 @@
           <property name="enabled">
            <bool>false</bool>
           </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>1</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Update</string>
           </property>
@@ -850,6 +856,12 @@
          <widget class="QCheckBox" name="checkbox_auto_update">
           <property name="enabled">
            <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>1</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
           <property name="text">
            <string>Auto-update</string>
