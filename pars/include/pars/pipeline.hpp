@@ -12,7 +12,7 @@
 #include <pa/math/scalar_field.hpp>
 #include <pa/math/vector_field.hpp>
 #include <pa/stages/partitioner.hpp>
-#include <pa/stages/data_loader.hpp>
+#include <pa/stages/data_io.hpp>
 #include <pa/stages/particle_tracer.hpp>
 #include <tbb/tbb.h>
 
@@ -46,7 +46,7 @@ protected:
   tbb::task_scheduler_init                       task_scheduler_init_   ;
                                                                         
   pa::partitioner                                partitioner_           ;
-  pa::data_loader                                data_loader_           ;
+  pa::data_io                                    data_io_               ;
   pa::particle_tracer                            particle_tracer_       ;
   ray_tracer                                     ray_tracer_            ;
 

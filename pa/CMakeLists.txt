@@ -13,6 +13,7 @@ set_max_warning_level ()
 ##################################################    Options     ##################################################
 option(BUILD_SHARED_LIBS "Build shared (dynamic) libraries." ON)
 option(BUILD_TESTS "Build tests." OFF)
+option(BUILD_VTK_EXPORT "Build VTK export support." OFF)
 
 ##################################################    Sources     ##################################################
 file(GLOB_RECURSE PROJECT_HEADERS include/*.h include/*.hpp)
@@ -60,6 +61,13 @@ import_library(MPI_C_INCLUDE_DIRS MPI_C_LIBRARIES)
 
 find_package  (TBB REQUIRED)
 list          (APPEND PROJECT_LIBRARIES TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
+
+if   (BUILD_VTK_EXPORT)
+  find_package(VTK REQUIRED)
+  include     (${VTK_USE_FILE})
+  list        (APPEND PROJECT_LIBRARIES ${VTK_LIBRARIES})
+  list        (APPEND PROJECT_COMPILE_DEFINITIONS -DVTK_SUPPORT)
+endif()
 
 ##################################################    Targets     ##################################################
 add_library(${PROJECT_NAME} ${PROJECT_FILES})

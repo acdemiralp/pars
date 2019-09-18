@@ -1,4 +1,4 @@
-#include <pa/stages/data_loader.hpp>
+#include <pa/stages/data_io.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -7,14 +7,22 @@
 
 #include <pa/math/types.hpp>
 
+#ifdef VTK_SUPPORT
+#include <vtkGenericDataObjectWriter.h>
+#include <vtkPoints.h>
+#include <vtkPolyData.h>
+#include <vtkPolyLine.h>
+#include <vtkSmartPointer.h>
+#endif
+
 namespace pa
 {
-data_loader::data_loader(partitioner* partitioner) : partitioner_(partitioner)
+data_io::data_io(partitioner* partitioner) : partitioner_(partitioner)
 {
 
 }
 
-void                                       data_loader::set_file                   (const std::string& filepath )
+void                                       data_io::set_file                   (const std::string& filepath )
 {
 #ifdef H5_HAVE_PARALLEL
   file_ = std::make_unique<HighFive::File>(filepath, HighFive::File::ReadWrite, HighFive::MPIOFileDriver(*partitioner_->communicator(), MPI_INFO_NULL));
@@ -23,12 +31,12 @@ void                                       data_loader::set_file                
 #endif
 }
 
-ivector3                                   data_loader::load_dimensions            ()
+ivector3                                   data_io::load_dimensions            ()
 {
   auto dimensions = file_->getDataSet("vectors").getDimensions();
   return ivector3(dimensions[0], dimensions[1], dimensions[2]);
 }
-std::optional<scalar_field>                data_loader::load_local_scalar_field    (const std::string& name     )
+std::optional<scalar_field>                data_io::load_local_scalar_field    (const std::string& name     )
 {
   std::optional<scalar_field> scalar_field;
 
@@ -37,7 +45,7 @@ std::optional<scalar_field>                data_loader::load_local_scalar_field 
 
   return scalar_field;
 }
-std::optional<vector_field>                data_loader::load_local_vector_field    ()
+std::optional<vector_field>                data_io::load_local_vector_field    ()
 {
   std::optional<vector_field> vector_field;
 
@@ -46,7 +54,7 @@ std::optional<vector_field>                data_loader::load_local_vector_field 
 
   return vector_field;
 }
-std::array<std::optional<vector_field>, 6> data_loader::load_neighbor_vector_fields()
+std::array<std::optional<vector_field>, 6> data_io::load_neighbor_vector_fields()
 {
   std::array<std::optional<vector_field>, 6> vector_fields;
 
@@ -63,7 +71,7 @@ std::array<std::optional<vector_field>, 6> data_loader::load_neighbor_vector_fie
   return vector_fields;
 }
 
-void                                       data_loader::load_scalar_field          (const std::string& name, const partitioner::rank_info& rank_info, std::optional<scalar_field>& scalar_field)
+void                                       data_io::load_scalar_field          (const std::string& name, const partitioner::rank_info& rank_info, std::optional<scalar_field>& scalar_field)
 {
   file_->getDataSet(name).select(
     {std::size_t(rank_info.offset            [0]), std::size_t(rank_info.offset            [1]), std::size_t(rank_info.offset            [2])},
@@ -78,7 +86,7 @@ void                                       data_loader::load_scalar_field       
   scalar_field->offset = rank_info.offset          .cast<float>().array() * scalar_field->spacing.array();
   scalar_field->size   = partitioner_->block_size().cast<float>().array() * scalar_field->spacing.array();
 }
-void                                       data_loader::load_vector_field          (                         const partitioner::rank_info& rank_info, std::optional<vector_field>& vector_field)
+void                                       data_io::load_vector_field          (                         const partitioner::rank_info& rank_info, std::optional<vector_field>& vector_field)
 {
   boost::multi_array<scalar, 4> data;
   file_->getDataSet("vectors").select(
@@ -104,7 +112,7 @@ void                                       data_loader::load_vector_field       
   vector_field->size   = partitioner_->block_size().cast<float>().array() * vector_field->spacing.array();
 }
   
-void                                       data_loader::save_ftle_field            (const std::string& name, scalar_field* ftle_field)
+void                                       data_io::save_ftle_field            (const std::string& name    , scalar_field*                 ftle_field     )
 {
   auto& rank_info  = partitioner_->local_rank_info();
   auto  offset     = rank_info->offset;
@@ -127,5 +135,46 @@ void                                       data_loader::save_ftle_field         
                    {std::size_t(size      [0]), std::size_t(size      [1]), std::size_t(size      [2])}, 
                    {1, 1, 1}).write(ftle_field->data);
   }
+}
+
+void                                       data_io::save_integral_curves       (const std::string& prefix, std::vector<integral_curves>* integral_curves)
+{
+#ifdef VTK_SUPPORT
+  auto points = vtkSmartPointer<vtkPoints   >::New();
+  auto cells  = vtkSmartPointer<vtkCellArray>::New();
+  auto line   = vtkSmartPointer<vtkPolyLine >::New();
+
+  for (auto i = 0; i < integral_curves->size(); ++i)
+  {
+    auto& integral_curve = integral_curves->at(i);
+
+    for (auto j = 0; j < integral_curve.vertices.size(); ++j)
+    {
+      auto& vertex = integral_curve.vertices[j];
+    
+      if (vertex != termination_vertex)
+      {
+        line->GetPointIds()->InsertNextId(points->InsertNextPoint(vertex[0], vertex[1], vertex[2]));
+      }
+      else if (line->GetPointIds()->GetNumberOfIds())
+      {
+        cells->InsertNextCell(line);
+        line = vtkSmartPointer<vtkPolyLine>::New();
+      }
+    }
+  }
+
+  auto polydata = vtkSmartPointer<vtkPolyData>::New();
+  polydata->SetPoints(points);
+  polydata->SetPolys (cells );
+
+  auto writer = vtkSmartPointer<vtkGenericDataObjectWriter>::New();
+  writer->SetFileName (std::string(prefix + "_" + std::to_string(partitioner_->local_rank_info()->rank) + "r.vtk").c_str());
+  writer->SetInputData(polydata);
+  writer->Write       ();
+
+#else
+  throw std::runtime_error("Unable to save integral curves: Built without VTK support.");
+#endif
 }
 }
