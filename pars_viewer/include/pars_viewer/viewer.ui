@@ -158,7 +158,10 @@
         <string notr="true">background-color : black</string>
        </property>
        <property name="frameShape">
-        <enum>QFrame::Box</enum>
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="lineWidth">
+        <number>0</number>
        </property>
        <property name="text">
         <string/>
@@ -172,7 +175,7 @@
         <item>
          <widget class="QToolBox" name="toolbox">
           <property name="enabled">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -184,7 +187,7 @@
            <enum>QFrame::NoFrame</enum>
           </property>
           <property name="currentIndex">
-           <number>4</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="page_dataset">
            <property name="geometry">
@@ -192,7 +195,7 @@
              <x>0</x>
              <y>0</y>
              <width>263</width>
-             <height>559</height>
+             <height>542</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -245,8 +248,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>263</width>
-             <height>559</height>
+             <width>218</width>
+             <height>63</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -329,8 +332,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>468</width>
-             <height>559</height>
+             <width>271</width>
+             <height>167</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -551,8 +554,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>263</width>
-             <height>559</height>
+             <width>176</width>
+             <height>70</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -644,8 +647,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>468</width>
-             <height>559</height>
+             <width>266</width>
+             <height>122</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -840,6 +843,16 @@
           </property>
           <property name="text">
            <string>Update</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkbox_auto_update">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Auto-update</string>
           </property>
          </widget>
         </item>

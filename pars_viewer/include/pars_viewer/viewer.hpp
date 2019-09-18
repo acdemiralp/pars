@@ -6,12 +6,15 @@
 #include <QTimer>
 #include <QWidget>
 
+#include <pars_viewer/transform.hpp>
 #include <ui_viewer.h>
 
 namespace pars
 {
 class viewer : public QMainWindow, public Ui_window, public zmq::monitor_t
 {
+  Q_OBJECT
+
 public:
   explicit viewer(QWidget* parent = nullptr);
 
@@ -29,9 +32,16 @@ protected:
   void set_connection_widgets_enabled   (const bool enabled);
   void set_configuration_widgets_enabled(const bool enabled);
 
-  QTimer                         timer_  ;
-  zmq::context_t                 context_;
-  std::unique_ptr<zmq::socket_t> socket_ ;
+  void keyPressEvent                    (QKeyEvent* key_event) override;
+  void keyReleaseEvent                  (QKeyEvent* key_event) override;
+
+  QTimer                         timer_    ;
+  zmq::context_t                 context_  ;
+  std::unique_ptr<zmq::socket_t> socket_   ;
+  transform                      transform_;
+  
+  std::size_t                    counter_  = 0;
+  bool forward_ = false, backward_ = false, left_ = false, right_ = false, up_ = false, down_ = false;
 };
 }
 

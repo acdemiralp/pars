@@ -1,5 +1,7 @@
 #include <pars_viewer/viewer.hpp>
 
+#include <QKeyEvent>
+
 #include <image.pb.h>
 #include <settings.pb.h>
 
@@ -70,10 +72,59 @@ void viewer::tick                             ()
 {
   if (socket_)
     check_event();
+
+  if(button_update->isEnabled())
+  {
+    if (forward_ )
+      transform_.translate(-transform_.forward());
+    if (backward_)
+      transform_.translate( transform_.forward());
+    if (left_    )
+      transform_.translate( transform_.right  ());
+    if (right_   )
+      transform_.translate(-transform_.right  ());
+    if (up_      )
+      transform_.translate( transform_.up     ());
+    if (down_    )
+      transform_.translate(-transform_.up     ());
+
+    if (forward_ || backward_ || left_ || right_ || up_ || down_)
+    {
+      text_position_x->setText(QString::number(transform_.translation()[0]));
+      text_position_y->setText(QString::number(transform_.translation()[1]));
+      text_position_z->setText(QString::number(transform_.translation()[2]));
+      text_forward_x ->setText(QString::number(transform_.forward    ()[0]));
+      text_forward_y ->setText(QString::number(transform_.forward    ()[1]));
+      text_forward_z ->setText(QString::number(transform_.forward    ()[2]));
+      text_up_x      ->setText(QString::number(transform_.up         ()[0]));
+      text_up_y      ->setText(QString::number(transform_.up         ()[1]));
+      text_up_z      ->setText(QString::number(transform_.up         ()[2]));
+    }
+    else
+    {
+      transform_.set_translation(Eigen::Vector3f(
+        text_position_x->text().toFloat(), 
+        text_position_y->text().toFloat(), 
+        text_position_z->text().toFloat()));
+      transform_.look_at(
+        Eigen::Vector3f(
+        text_forward_x->text().toFloat(),
+        text_forward_y->text().toFloat(),
+        text_forward_z->text().toFloat()), 
+        Eigen::Vector3f(
+        text_up_x      ->text().toFloat(), 
+        text_up_y      ->text().toFloat(), 
+        text_up_z      ->text().toFloat()));
+    }
+  }
+
+  counter_++;
+  if (checkbox_auto_update->isChecked() && counter_ % 20 == 0)
+    update_parameters();
 }
 void viewer::update_parameters                ()
 {
-  button_update->setEnabled(false);
+  set_configuration_widgets_enabled(false);
 
   std::string mode;
   if (checkbox_particle_advection_enabled->isChecked()) mode += "streamlines ";
@@ -121,13 +172,13 @@ void viewer::update_parameters                ()
 
   QPixmap pixmap;
   pixmap.convertFromImage(QImage(reinterpret_cast<const unsigned char*>(image.data().c_str()), image.size()[0], image.size()[1], QImage::Format_RGBA8888));
-  QMatrix rotation_matrix;
-  rotation_matrix.rotate(180);
-  pixmap = pixmap.transformed(rotation_matrix);
+  //QMatrix rotation_matrix;
+  //rotation_matrix.rotate(180);
+  //pixmap = pixmap.transformed(rotation_matrix);
 
   label_image->setPixmap(pixmap);
 
-  button_update->setEnabled(true);
+  set_configuration_widgets_enabled(true);
 }
 
 void viewer::set_connection_widgets_enabled   (const bool enabled)
@@ -138,7 +189,39 @@ void viewer::set_connection_widgets_enabled   (const bool enabled)
 }
 void viewer::set_configuration_widgets_enabled(const bool enabled)
 {
-  toolbox       ->setEnabled(enabled);
-  button_update ->setEnabled(enabled);
+  toolbox             ->setEnabled(enabled);
+  button_update       ->setEnabled(enabled);
+  checkbox_auto_update->setEnabled(enabled);
+}
+
+void viewer::keyPressEvent                    (QKeyEvent* key_event)
+{
+  if (key_event->key() == Qt::Key_W)
+    forward_  = true;
+  if (key_event->key() == Qt::Key_S)
+    backward_ = true;
+  if (key_event->key() == Qt::Key_A)
+    left_     = true;
+  if (key_event->key() == Qt::Key_D)
+    right_    = true;
+  if (key_event->key() == Qt::Key_X)
+    up_       = true;
+  if (key_event->key() == Qt::Key_Z)
+    down_     = true;
+}
+void viewer::keyReleaseEvent                  (QKeyEvent* key_event)
+{
+  if (key_event->key() == Qt::Key_W)
+    forward_  = false;
+  if (key_event->key() == Qt::Key_S)
+    backward_ = false;
+  if (key_event->key() == Qt::Key_A)
+    left_     = false;
+  if (key_event->key() == Qt::Key_D)
+    right_    = false;
+  if (key_event->key() == Qt::Key_X)
+    up_       = false;
+  if (key_event->key() == Qt::Key_Z)
+    down_     = false;
 }
 }
