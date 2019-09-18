@@ -10,6 +10,7 @@
 #ifdef VTK_SUPPORT
 #include <vtkGenericDataObjectWriter.h>
 #include <vtkPoints.h>
+#include <vtkPointData.h>
 #include <vtkPolyData.h>
 #include <vtkPolyLine.h>
 #include <vtkSmartPointer.h>
@@ -140,9 +141,12 @@ void                                       data_io::save_ftle_field            (
 void                                       data_io::save_integral_curves       (const std::string& prefix, std::vector<integral_curves>* integral_curves)
 {
 #ifdef VTK_SUPPORT
-  auto points = vtkSmartPointer<vtkPoints   >::New();
-  auto cells  = vtkSmartPointer<vtkCellArray>::New();
-  auto line   = vtkSmartPointer<vtkPolyLine >::New();
+  auto points = vtkSmartPointer<vtkPoints           >::New();
+  auto colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+  auto cells  = vtkSmartPointer<vtkCellArray        >::New();
+  auto line   = vtkSmartPointer<vtkPolyLine         >::New();
+  colors->SetNumberOfComponents(3);
+  colors->SetName("Colors");
 
   for (auto i = 0; i < integral_curves->size(); ++i)
   {
@@ -151,12 +155,14 @@ void                                       data_io::save_integral_curves       (
     for (auto j = 0; j < integral_curve.vertices.size(); ++j)
     {
       auto& vertex = integral_curve.vertices[j];
+      auto& color  = integral_curve.colors  [j];
     
       if (vertex != termination_vertex)
       {
         line->GetPointIds()->InsertNextId(points->InsertNextPoint(vertex[0], vertex[1], vertex[2]));
+        colors->InsertNextTuple3(color[0] * 255.0f, color[1] * 255.0f, color[2] * 255.0f);
       }
-      else if (line->GetPointIds()->GetNumberOfIds())
+      else if (line->GetPointIds()->GetNumberOfIds() > 0)
       {
         cells->InsertNextCell(line);
         line = vtkSmartPointer<vtkPolyLine>::New();
@@ -166,7 +172,8 @@ void                                       data_io::save_integral_curves       (
 
   auto polydata = vtkSmartPointer<vtkPolyData>::New();
   polydata->SetPoints(points);
-  polydata->SetPolys (cells );
+  polydata->SetLines (cells );
+  polydata->GetPointData()->SetScalars(colors);
 
   auto writer = vtkSmartPointer<vtkGenericDataObjectWriter>::New();
   writer->SetFileName (std::string(prefix + "_" + std::to_string(partitioner_->local_rank_info()->rank) + "r.vtk").c_str());
