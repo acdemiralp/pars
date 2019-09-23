@@ -333,8 +333,12 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
 }
                  bm::mpi_session<>  pipeline::execute_ftle(const settings& settings)
 {
+  auto mode = pa::ftle_map_generator::mode::regular;
+  if (settings.mode().find("fractional_anisotropy"))
+    mode = pa::ftle_map_generator::mode::fractional_anisotropy;
+
   pa::flow_map_generator flow_map_generator(&partitioner_);
-  pa::ftle_map_generator ftle_map_generator(&partitioner_);
+  pa::ftle_map_generator ftle_map_generator(&partitioner_, mode);
 
   std::optional  <pa::vector_field> vector_field;
   std::unique_ptr<pa::vector_field> flow_map    ;

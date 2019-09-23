@@ -5,7 +5,7 @@
 
 namespace pa
 {
-ftle_map_generator::ftle_map_generator(partitioner*  partitioner) : partitioner_(partitioner)
+ftle_map_generator::ftle_map_generator(partitioner* partitioner, mode mode) : partitioner_(partitioner), mode_(mode)
 {
 
 }
@@ -41,9 +41,19 @@ std::unique_ptr<scalar_field> ftle_map_generator::generate    ()
 
       // Compute eigenvalues and eigenvectors.
       Eigen::SelfAdjointEigenSolver<matrix3> solver(spectral_norm);
+      auto eigenvalues  = solver.eigenvalues ();
+      auto eigenvectors = solver.eigenvectors();
 
       // Compute FTLE.
-      ftle_map->data[x][y][z] = std::log(std::sqrt(solver.eigenvalues().maxCoeff())) / std::abs(time_);
+      pa::scalar value;
+      if (mode_ == mode::regular)
+        value = std::log(std::sqrt(eigenvalues.maxCoeff())) / std::abs(time_);
+      else if (mode_ == mode::fractional_anisotropy)
+        value = std::sqrt(0.5) * 
+                std::sqrt(std::pow(eigenvalues[0] - eigenvalues[1], 2) + std::pow(eigenvalues[1] - eigenvalues[2], 2) + std::pow(eigenvalues[2] - eigenvalues[0], 2)) /
+                std::sqrt(std::pow(eigenvalues[0], 2) + std::pow(eigenvalues[1], 2) + std::pow(eigenvalues[2], 2));
+
+      ftle_map->data[x][y][z] = value;
   }}}});
 
   return ftle_map;

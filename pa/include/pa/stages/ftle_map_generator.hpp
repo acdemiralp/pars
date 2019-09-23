@@ -13,7 +13,13 @@ namespace pa
 class PA_EXPORT ftle_map_generator
 {
 public:
-  explicit ftle_map_generator  (partitioner* partitioner);
+  enum class mode
+  {
+    regular,
+    fractional_anisotropy
+  };
+
+  explicit ftle_map_generator  (partitioner* partitioner, mode mode = mode::regular);
   ftle_map_generator           (const ftle_map_generator&  that) = delete ;
   ftle_map_generator           (      ftle_map_generator&& temp) = delete ;
   virtual ~ftle_map_generator  ()                                = default;
@@ -27,6 +33,7 @@ public:
 
 protected:
   partitioner*  partitioner_ = nullptr;
+  mode          mode_        = mode::regular;
 
   vector_field* flow_map_    = nullptr;
   scalar        time_        = 1;
