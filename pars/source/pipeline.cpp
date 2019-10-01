@@ -289,7 +289,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     if (communicator_.rank() == 0) std::cout << "6.2::ray_tracer::set_volume\n";
     recorder.record("6.2::ray_tracer::set_volume"              , [&] ()
     {
-      if (!volume_support || (!dataset_params_changed && !raytrace_params_changed))
+      if (!volume_support || export_support || (!dataset_params_changed && !raytrace_params_changed))
         return;
 
       ray_tracer_.set_volume(&local_scalar_field_.value());
@@ -300,7 +300,7 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     if (communicator_.rank() == 0) std::cout << "6.3::ray_tracer::set_integral_curves\n";
     recorder.record("6.3::ray_tracer::set_integral_curves"     , [&] ()
     {
-      if (!streamline_support || (!dataset_params_changed && !advection_params_changed))
+      if (!streamline_support || export_support || (!dataset_params_changed && !advection_params_changed))
         return;
 
       ray_tracer_.set_integral_curves(&integral_curves_, settings.raytracing_streamline_radius() ? settings.raytracing_streamline_radius() : 1.0f);
@@ -311,6 +311,9 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     if (communicator_.rank() == 0) std::cout << "6.4::ray_tracer::trace\n";
     recorder.record("6.4::ray_tracer::trace"                   , [&] ()
     {
+      if (export_support)
+        return;
+
       ray_tracer_.trace(settings.raytracing_iterations());
     });
 
@@ -319,8 +322,10 @@ std::pair<image, bm::mpi_session<>> pipeline::execute     (const settings& setti
     if (communicator_.rank() == 0) std::cout << "6.5::data_io::export_streamlines\n";
     recorder.record("6.5::data_io::export_streamlines"         , [&] ()
     {
-      if (export_support)
-        data_io_.save_integral_curves("streamlines", &integral_curves_);
+      if (!export_support)
+        return;
+      
+      data_io_.save_integral_curves("streamlines", &integral_curves_);
     });
 
 
