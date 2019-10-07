@@ -13,7 +13,7 @@ ray_tracer::ray_tracer (pa::partitioner* partitioner, const std::size_t thread_c
 
   const auto device = ospray::cpp::Device("mpi_distributed");
   device.set       ("numThreads"       , thread_count      );
-  //device.set     ("setAffinity"      , 0                 ); // Causes random hangs in distributed mode.
+  device.set       ("setAffinity"      , 1                 ); // Causes random hangs in distributed mode.
   device.set       ("masterRank"       , 0                 );
   device.set       ("worldCommunicator", &raw_communicator_);
 #if _DEBUG
