@@ -123,7 +123,7 @@ void                                       data_io::save_ftle_field            (
   if (file_->exist(name))
   {
     auto dataset = file_->getDataSet(name);
-    dataset.resize({std::size_t(total_size[0]), std::size_t(total_size[1]), std::size_t(total_size[2])});
+    //dataset.resize({std::size_t(total_size[0]), std::size_t(total_size[1]), std::size_t(total_size[2])});
     dataset.select({std::size_t(offset    [0]), std::size_t(offset    [1]), std::size_t(offset    [2])}, 
                    {std::size_t(size      [0]), std::size_t(size      [1]), std::size_t(size      [2])}, 
                    {1, 1, 1}).write(ftle_field->data);
