@@ -8,12 +8,13 @@
 #include <pa/math/types.hpp>
 
 #ifdef VTK_SUPPORT
-#include <vtkGenericDataObjectWriter.h>
+#include <vtkMPIController.h>
 #include <vtkPoints.h>
 #include <vtkPointData.h>
 #include <vtkPolyData.h>
 #include <vtkPolyLine.h>
 #include <vtkSmartPointer.h>
+#include <vtkXMLPPolyDataWriter.h>
 #endif
 
 namespace pa
@@ -141,6 +142,14 @@ void                                       data_io::save_ftle_field            (
 void                                       data_io::save_integral_curves       (const std::string& prefix, std::vector<integral_curves>* integral_curves)
 {
 #ifdef VTK_SUPPORT
+  auto controller = static_cast<vtkMPIController*>(vtkMultiProcessController::GetGlobalController());
+  if (!controller)
+  {
+    controller = vtkMPIController::New();
+    controller->Initialize();
+    vtkMultiProcessController::SetGlobalController(controller);
+  }
+
   auto points = vtkSmartPointer<vtkPoints           >::New();
   auto colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
   auto cells  = vtkSmartPointer<vtkCellArray        >::New();
@@ -175,10 +184,15 @@ void                                       data_io::save_integral_curves       (
   polydata->SetLines (cells );
   polydata->GetPointData()->SetScalars(colors);
 
-  auto writer = vtkSmartPointer<vtkGenericDataObjectWriter>::New();
-  writer->SetFileName (std::string(prefix + "_" + std::to_string(partitioner_->local_rank_info()->rank) + "r.vtk").c_str());
-  writer->SetInputData(polydata);
-  writer->Write       ();
+  auto writer = vtkSmartPointer<vtkXMLPPolyDataWriter>::New();
+  writer->SetFileName        ("streamlines.pvti");
+  writer->SetDataModeToBinary();
+  writer->SetInputData       (polydata);
+  writer->SetNumberOfPieces  (partitioner_->communicator()->size());
+  writer->SetStartPiece      (partitioner_->communicator()->rank());
+  writer->SetEndPiece        (partitioner_->communicator()->rank());
+  writer->SetWriteSummaryFile(partitioner_->communicator()->rank() == 0 ? 1 : 0);
+  writer->Write              ();
 
 #else
   throw std::runtime_error("Unable to save integral curves: Built without VTK support.");
